@@ -1,4 +1,6 @@
-# Mini Redis (CLI 기반 인메모리 Key-Value 저장소)
+# 5-1- Mini Redis (CLI 기반 인메모리 Key-Value 저장소)
+
+> 📊 **[메인 인포그래픽·애니메이션 README 보기](../README.md)** &nbsp;|&nbsp; **▶ [인터랙티브 HTML 데모 열기](https://nick19850906-debug.github.io/5-1-Mini-Redis/)**
 
 파이썬의 내장 컬렉션(`dict`, `set`, `collections`)을 쓰지 않고 **이중 연결 리스트, 해시맵, 최소 힙**을 직접 구현해 Redis의 핵심 원리(O(1) 조회, LRU 캐시 교체, TTL 만료 관리, 메모리 제한)를 재현한 프로젝트입니다.
 

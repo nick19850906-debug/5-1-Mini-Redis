@@ -70,20 +70,21 @@
   <text x="793" y="354" font-size="12" text-anchor="middle" font-weight="700" style="fill:#b45309">▲ 가장 오래됨 → 퇴거 1순위</text>
 
   <!-- Heap -->
-  <rect x="530" y="420" width="440" height="100" rx="14" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.5"/>
-  <text x="550" y="448" font-size="16" font-weight="800" style="fill:#b45309">MinHeap  <tspan font-weight="500" font-size="13">TTL 만료 (min_heap.py)</tspan></text>
-  <g class="mono" font-size="12">
-    <circle class="glow" cx="640" cy="488" r="17" fill="#fbbf24" stroke="#d97706" stroke-width="2"/><text x="640" y="492" text-anchor="middle" font-weight="700">t=3</text>
-    <circle cx="720" cy="495" r="15" fill="#fff" stroke="#f59e0b"/><text x="720" y="499" text-anchor="middle">t=8</text>
-    <circle cx="790" cy="495" r="15" fill="#fff" stroke="#f59e0b"/><text x="790" y="499" text-anchor="middle">t=5</text>
+  <rect x="530" y="406" width="440" height="118" rx="14" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.5"/>
+  <text x="550" y="434" font-size="16" font-weight="800" style="fill:#b45309">MinHeap  <tspan font-weight="500" font-size="13">TTL 만료 (min_heap.py)</tspan></text>
+  <line x1="650" y1="464" x2="600" y2="496" stroke="#d97706" stroke-width="2"/>
+  <line x1="650" y1="464" x2="700" y2="496" stroke="#d97706" stroke-width="2"/>
+  <g class="mono" font-size="11.5">
+    <circle class="glow" cx="650" cy="456" r="18" fill="#fbbf24" stroke="#d97706" stroke-width="2"/><text x="650" y="460" text-anchor="middle" font-weight="700">t=3</text>
+    <circle cx="600" cy="502" r="16" fill="#fff" stroke="#f59e0b" stroke-width="2"/><text x="600" y="506" text-anchor="middle">t=8</text>
+    <circle cx="700" cy="502" r="16" fill="#fff" stroke="#f59e0b" stroke-width="2"/><text x="700" y="506" text-anchor="middle">t=5</text>
   </g>
-  <line x1="652" y1="498" x2="706" y2="498" stroke="#f59e0b" stroke-width="1.5"/>
-  <line x1="652" y1="492" x2="776" y2="492" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3 3"/>
-  <text x="830" y="478" font-size="12.5">루트 = 가장 빨리 만료</text>
-  <text x="830" y="498" font-size="12.5">peek() → O(1)</text>
+  <text x="755" y="470" font-size="12.5" font-weight="700">루트 = 가장 빨리 만료</text>
+  <text x="755" y="492" font-size="12.5">peek() → O(1) 즉시 확인</text>
+  <text x="755" y="512" font-size="12">push/pop → O(log N)</text>
 
   <!-- Record pointer -->
-  <path class="ptr" d="M900,152 C990,200 990,230 930,286" fill="none" stroke="#8b5cf6" stroke-width="2.5" marker-end="url(#arrP)"/>
-  <text x="975" y="205" font-size="12" font-weight="700" text-anchor="end" style="fill:#7c3aed">Record.lru_node</text>
-  <text x="975" y="221" font-size="12" text-anchor="end" style="fill:#7c3aed">→ O(1) 위치 찾기</text>
+  <path class="ptr" d="M775,160 C845,185 845,235 795,280" fill="none" stroke="#8b5cf6" stroke-width="2.5" marker-end="url(#arrP)"/>
+  <text x="855" y="205" font-size="12" font-weight="700" style="fill:#7c3aed">Record.lru_node</text>
+  <text x="855" y="221" font-size="12" style="fill:#7c3aed">→ O(1) 위치 찾기</text>
 </svg>

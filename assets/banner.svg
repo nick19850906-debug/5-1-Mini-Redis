@@ -28,9 +28,11 @@
   <circle class="float2" cx="940" cy="190" r="30" fill="#ffffff" opacity="0.08"/>
   <circle class="float3" cx="640" cy="215" r="22" fill="#ffffff" opacity="0.06"/>
   <circle class="float2" cx="70" cy="215" r="34" fill="#ffffff" opacity="0.06"/>
-  <text x="60" y="108" font-size="62" font-weight="800" fill="#ffffff">Mini Redis</text>
-  <text x="62" y="148" font-size="22" fill="#dbeafe">밑바닥부터 만든 CLI 인메모리 Key-Value 저장소</text>
-  <text x="62" y="176" font-size="16" fill="#bfdbfe">dict · set · collections 없이 — 해시맵 · 이중 연결 리스트 · 최소 힙</text>
+  <rect x="62" y="28" width="166" height="26" rx="13" fill="#0f172a" opacity="0.45"/>
+  <text x="62" y="46" font-size="13" font-weight="700" fill="#93c5fd" text-anchor="middle" dx="83">5-1- Mini Redis</text>
+  <text x="60" y="108" font-size="56" font-weight="800" fill="#ffffff">Mini Redis</text>
+  <text x="62" y="148" font-size="21" fill="#dbeafe">밑바닥부터 만든 CLI 인메모리 Key-Value 저장소</text>
+  <text x="62" y="176" font-size="15.5" fill="#bfdbfe">dict · set · collections 없이 — 해시맵 · 이중 연결 리스트 · 최소 힙</text>
   <g class="chip">
     <rect x="62" y="196" width="190" height="36" rx="18" fill="url(#chipA)"/>
     <text x="157" y="220" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">HashMap</text>
@@ -43,6 +45,8 @@
     <rect x="530" y="196" width="190" height="36" rx="18" fill="url(#chipC)"/>
     <text x="625" y="220" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">MinHeap (TTL)</text>
   </g>
-  <text x="640" y="110" font-size="20" fill="#93c5fd" font-family="Consolas, monospace">mini-redis&gt; SET hello "world"</text>
-  <text x="640" y="138" font-size="20" fill="#86efac" font-family="Consolas, monospace">OK<tspan class="cursor" fill="#fff"> ▌</tspan></text>
+  <rect x="595" y="44" width="365" height="104" rx="14" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" opacity="0.88"/>
+  <circle cx="617" cy="62" r="5" fill="#ef4444"/><circle cx="633" cy="62" r="5" fill="#fbbf24"/><circle cx="649" cy="62" r="5" fill="#22c55e"/>
+  <text x="615" y="96" font-size="16" fill="#93c5fd" font-family="Consolas, monospace">mini-redis&gt; SET hello "world"</text>
+  <text x="615" y="124" font-size="16" fill="#86efac" font-family="Consolas, monospace">OK<tspan class="cursor" fill="#fff"> ▌</tspan></text>
 </svg>
