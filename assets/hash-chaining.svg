@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="1000" height="360" role="img" aria-label="HashMap chaining and resize animation">
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#3b82f6"/></marker>
+    <marker id="am" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#f59e0b"/></marker>
+  </defs>
+  <style>
+    text { font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; fill: #1e293b; }
+    .mono { font-family: Consolas, "Courier New", monospace; }
+    .flow { stroke-dasharray: 7 5; animation: dash 1.1s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -24; } }
+    .glowBox { animation: pulseB 2.2s ease-in-out infinite; }
+    .chainSlide { animation: slideIn 4s ease-in-out infinite; }
+    .meterFill { animation: meterAnim 6s ease-in-out infinite; }
+    .resizeBadge { animation: popB 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes pulseB { 0%,100% { stroke-width: 2.5; } 50% { stroke-width: 4; stroke: #d97706; } }
+    @keyframes slideIn { 0%,15% { opacity: .25; transform: translateX(-8px); } 35%,85% { opacity: 1; transform: translateX(0); } 100% { opacity: .25; } }
+    @keyframes meterAnim { 0%,20% { width: 110px; fill: #3b82f6; } 50%,85% { width: 175px; fill: #f59e0b; } 100% { width: 110px; fill: #3b82f6; } }
+    @keyframes popB { 0%,42% { opacity: .35; transform: scale(.96); } 55%,85% { opacity: 1; transform: scale(1.04); } 100% { opacity: .35; transform: scale(.96); } }
+    @media (prefers-reduced-motion: reduce) { .flow, .glowBox, .chainSlide, .meterFill, .resizeBadge { animation: none !important; } }
+  </style>
+
+  <rect width="1000" height="360" rx="20" fill="#f8fafc"/>
+  <text x="500" y="34" font-size="20" font-weight="800" text-anchor="middle">해시맵(아파트 우편함) 충돌 해결(체이닝) &amp; 2배 증축 원리</text>
+
+  <!-- Step 1: Incoming Keys & _hash Calculator -->
+  <rect x="28" y="68" width="148" height="52" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="102" y="90" font-size="13.5" font-weight="800" text-anchor="middle" class="mono">SET user:1</text>
+  <text x="102" y="109" font-size="11.5" text-anchor="middle" style="fill:#1d4ed8">값: "Alice"</text>
+
+  <rect x="28" y="156" width="148" height="52" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="102" y="178" font-size="13.5" font-weight="800" text-anchor="middle" class="mono">SET k:1</text>
+  <text x="102" y="197" font-size="11.5" text-anchor="middle" style="fill:#b45309">우연히 같은 번호!</text>
+
+  <path class="flow" d="M178,94 L238,125" fill="none" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#ah)"/>
+  <path class="flow" d="M178,182 L238,152" fill="none" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#am)"/>
+
+  <!-- Animated packets entering _hash -->
+  <circle r="5" fill="#2563eb"><animateMotion dur="2.2s" repeatCount="indefinite" path="M178,94 L242,127"/></circle>
+  <circle r="5" fill="#d97706"><animateMotion dur="2.2s" begin="1.1s" repeatCount="indefinite" path="M178,182 L242,149"/></circle>
+
+  <!-- Hash Function Box -->
+  <rect x="242" y="88" width="174" height="102" rx="14" fill="#eff6ff" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="329" y="114" font-size="14" font-weight="800" text-anchor="middle" style="fill:#1e40af">_hash(key) 계산기</text>
+  <text x="329" y="138" font-size="12" text-anchor="middle" class="mono">Σ (ord(ch) × 31) % 16</text>
+  <rect x="272" y="150" width="114" height="26" rx="7" fill="#1d4ed8"/>
+  <text x="329" y="167" font-size="12.5" font-weight="800" text-anchor="middle" style="fill:#fff">둘 다 → #2번 칸!</text>
+
+  <line class="flow" x1="418" y1="138" x2="472" y2="138" stroke="#f59e0b" stroke-width="3" marker-end="url(#am)"/>
+  <circle r="5" fill="#f59e0b"><animateMotion dur="1.4s" repeatCount="indefinite" path="M418,138 L472,138"/></circle>
+
+  <!-- Step 2: Bucket Array & Chaining -->
+  <rect x="476" y="60" width="234" height="202" rx="14" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+  <text x="593" y="84" font-size="13.5" font-weight="800" text-anchor="middle">16칸 우편함 배열 (_buckets)</text>
+
+  <rect x="492" y="96" width="84" height="30" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/><text x="534" y="116" font-size="12" text-anchor="middle" class="mono">[0] 비어있음</text>
+  <rect x="492" y="132" width="84" height="30" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/><text x="534" y="152" font-size="12" text-anchor="middle" class="mono">[1] 비어있음</text>
+  <rect class="glowBox" x="492" y="168" width="84" height="34" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.5"/><text x="534" y="190" font-size="12.5" font-weight="800" text-anchor="middle" class="mono" style="fill:#b45309">[2] 충돌!</text>
+  <rect x="492" y="210" width="84" height="30" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/><text x="534" y="230" font-size="12" text-anchor="middle" class="mono">[3..15] …</text>
+
+  <!-- Chain inside Bucket #2 -->
+  <path d="M578,185 L596,185" stroke="#d97706" stroke-width="2.5"/>
+  <rect x="598" y="134" width="98" height="38" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="647" y="151" font-size="11.5" font-weight="800" text-anchor="middle" class="mono">user:1</text>
+  <text x="647" y="166" font-size="10.5" text-anchor="middle">"Alice"</text>
+
+  <text x="647" y="192" font-size="14" font-weight="900" text-anchor="middle" style="fill:#d97706">⇅</text>
+
+  <g class="chainSlide">
+    <rect x="598" y="200" width="98" height="38" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="647" y="217" font-size="11.5" font-weight="800" text-anchor="middle" class="mono">k:1</text>
+    <text x="647" y="232" font-size="10.5" text-anchor="middle">"Bob" (체이닝!)</text>
+  </g>
+
+  <!-- Step 3: Load Factor 0.75 -> 2x Resize -->
+  <rect x="734" y="60" width="240" height="202" rx="14" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+  <text x="854" y="86" font-size="13.5" font-weight="800" text-anchor="middle" style="fill:#047857">적재율(로드 팩터) 자동 증축</text>
+  <text x="854" y="110" font-size="12" text-anchor="middle">저장된 키 수 ÷ 16칸 &gt; 0.75 일 때</text>
+
+  <rect x="756" y="126" width="196" height="20" rx="10" fill="#d1fae5" stroke="#6ee7b7"/>
+  <rect class="meterFill" x="756" y="126" width="110" height="20" rx="10" fill="#3b82f6"/>
+  <line x1="903" y1="120" x2="903" y2="152" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="4 3"/>
+  <text x="903" y="166" font-size="11" font-weight="800" text-anchor="middle" style="fill:#dc2626">기준 0.75 (12개 초과)</text>
+
+  <g class="resizeBadge">
+    <rect x="754" y="182" width="200" height="64" rx="10" fill="#047857"/>
+    <text x="854" y="208" font-size="13.5" font-weight="800" text-anchor="middle" style="fill:#ffffff">16칸 ➔ 32칸 2배 증축!</text>
+    <text x="854" y="230" font-size="11.5" text-anchor="middle" style="fill:#a7f3d0">_resize() 로 모든 키 재배치</text>
+  </g>
+
+  <!-- Bottom summary strip -->
+  <rect x="28" y="282" width="946" height="56" rx="12" fill="#0f172a"/>
+  <text x="500" y="306" font-size="13.5" font-weight="700" text-anchor="middle" style="fill:#7dd3fc">💡 핵심 요약: 우편함 번호가 겹쳐도(체이닝) 잃어버리지 않고, 75% 넘게 차면 2배로 넓혀(Rehash) 항상 O(1) 속도를 유지합니다!</text>
+  <text x="500" y="326" font-size="12" text-anchor="middle" style="fill:#94a3b8" class="mono">구현 파일: mini_redis/hash_map.py (_hash · put · _resize) + mini_redis/doubly_linked_list.py</text>
+</svg>

@@ -12,6 +12,7 @@
     .g2 { animation-delay: 1s; } .g3 { animation-delay: 2s; }
     @keyframes dash { to { stroke-dashoffset: -28; } }
     @keyframes glow { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .flow, .ptr, .glow { animation: none !important; } }
   </style>
   <rect width="1000" height="540" rx="20" fill="#f8fafc"/>
   <text x="500" y="38" font-size="22" font-weight="800" text-anchor="middle">한눈에 보는 구조: 3개의 자료구조가 한 팀으로 일한다</text>
@@ -83,8 +84,13 @@
   <text x="755" y="492" font-size="12.5">peek() → O(1) 즉시 확인</text>
   <text x="755" y="512" font-size="12">push/pop → O(log N)</text>
 
-  <!-- Record pointer -->
+  <!-- Record pointer + animated particles -->
   <path class="ptr" d="M775,160 C845,185 845,235 795,280" fill="none" stroke="#8b5cf6" stroke-width="2.5" marker-end="url(#arrP)"/>
+  <circle r="5" fill="#7c3aed"><animateMotion dur="2.2s" repeatCount="indefinite" path="M775,160 C845,185 845,235 795,280"/></circle>
+  <circle r="5" fill="#475569"><animateMotion dur="1.4s" repeatCount="indefinite" path="M182,260 L236,260"/></circle>
+  <circle r="5" fill="#2563eb"><animateMotion dur="1.8s" begin="0.2s" repeatCount="indefinite" path="M432,215 L528,120"/></circle>
+  <circle r="5" fill="#059669"><animateMotion dur="1.8s" begin="0.6s" repeatCount="indefinite" path="M432,260 L528,300"/></circle>
+  <circle r="5" fill="#d97706"><animateMotion dur="1.8s" begin="1.0s" repeatCount="indefinite" path="M432,310 L528,450"/></circle>
   <text x="855" y="205" font-size="12" font-weight="700" style="fill:#7c3aed">Record.lru_node</text>
   <text x="855" y="221" font-size="12" style="fill:#7c3aed">→ O(1) 위치 찾기</text>
 </svg>

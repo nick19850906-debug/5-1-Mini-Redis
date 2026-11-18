@@ -1,209 +1,265 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>5-1- Mini Redis — 인터랙티브 애니메이션 스튜디오</title>
+<title>5-1- Mini Redis — 진화형 인터랙티브 애니메이션 스튜디오</title>
 <style>
   :root {
-    --bg:#eef2f7; --card:#ffffff; --ink:#0f172a; --sub:#64748b;
-    --blue:#3b82f6; --green:#10b981; --amber:#f59e0b; --red:#ef4444; --purple:#8b5cf6; --line:#e2e8f0;
+    --bg:#f1f5f9; --card:#ffffff; --soft:#f8fafc; --ink:#0f172a; --sub:#64748b; --border:#e2e8f0;
+    --blue:#3b82f6; --green:#10b981; --amber:#f59e0b; --red:#ef4444; --purple:#8b5cf6;
+    --term-bg:#0f172a; --term-in:#1e293b; --term-bd:#334155;
+    --explain-bg:linear-gradient(135deg,#eff6ff 0%,#ecfdf5 100%); --explain-bd:#93c5fd; --explain-ink:#1e3a8a;
+    --pill-bg:#f1f5f9; --heap-bg:linear-gradient(180deg,#fffbeb 0%,#ffffff 100%); --heap-bd:#fde68a;
+    --shadow:0 8px 26px rgba(15,23,42,.07);
+  }
+  :root[data-theme="dark"] {
+    --bg:#0b1120; --card:#111827; --soft:#1e293b; --ink:#f1f5f9; --sub:#94a3b8; --border:#1f2937;
+    --term-bg:#020617; --term-in:#0f172a; --term-bd:#334155;
+    --explain-bg:linear-gradient(135deg,#172554 0%,#064e3b 100%); --explain-bd:#3b82f6; --explain-ink:#dbeafe;
+    --pill-bg:#1e293b; --heap-bg:linear-gradient(180deg,#271b07 0%,#111827 100%); --heap-bd:#b45309;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.5; }
-  header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 55%,#2563eb 100%); color:#fff; padding:28px 20px 44px; text-align:center; }
-  header h1 { margin:0 0 6px; font-size:2rem; letter-spacing:-.2px; }
-  header p { margin:0; color:#bfdbfe; font-size:.96rem; }
-  main { max-width:1200px; margin:-28px auto 44px; padding:0 16px; }
-  .card { background:var(--card); border-radius:16px; padding:18px 20px; margin-bottom:16px; box-shadow:0 6px 22px rgba(15,23,42,.07); border:1px solid rgba(226,232,240,.8); transition:box-shadow .25s, border-color .25s; }
-  .card.active-card { border-color:#60a5fa; box-shadow:0 8px 26px rgba(37,99,235,.16); }
-  .card h2 { margin:0 0 10px; font-size:1.05rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; }
-  .sublbl { font-weight:500; color:var(--sub); font-size:.82rem; }
-  .grid { display:grid; grid-template-columns:1.05fr 1fr; gap:16px; }
-  @media (max-width:920px){ .grid { grid-template-columns:1fr; } }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.5; transition:background .25s, color .25s; }
+  header { background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 52%,#0284c7 100%); color:#fff; padding:26px 20px 46px; position:relative; }
+  .header-inner { max-width:1220px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+  header h1 { margin:0 0 4px; font-size:1.85rem; letter-spacing:-.2px; }
+  header p { margin:0; color:#bae6fd; font-size:.94rem; }
+  .theme-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.32); border-radius:999px; padding:7px 14px; font-weight:700; font-size:.84rem; cursor:pointer; backdrop-filter:blur(6px); }
+  .theme-btn:hover { background:rgba(255,255,255,.26); }
 
-  /* Live Interpreter & Playback Bar */
-  .explain-wrap { background:linear-gradient(90deg,#eff6ff,#f0fdfa); border:2px solid #93c5fd; border-radius:16px; padding:14px 18px; margin-bottom:16px; box-shadow:0 6px 18px rgba(37,99,235,.09); }
-  .explain-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:6px; }
+  main { max-width:1220px; margin:-28px auto 44px; padding:0 16px; }
+  .card { background:var(--card); border-radius:18px; padding:18px 20px; margin-bottom:16px; box-shadow:var(--shadow); border:1px solid var(--border); transition:background .25s, border-color .25s; }
+  .card h2 { margin:0 0 10px; font-size:1.04rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .sublbl { font-weight:500; color:var(--sub); font-size:.82rem; }
+  .grid { display:grid; grid-template-columns:1.04fr 1fr; gap:16px; }
+  @media (max-width:940px){ .grid { grid-template-columns:1fr; } }
+
+  /* Interpreter + Interactive Step Scrubber + Speed Gauge */
+  .explain-wrap { background:var(--explain-bg); border:2px solid var(--explain-bd); border-radius:18px; padding:14px 18px; margin-bottom:16px; box-shadow:var(--shadow); }
+  .explain-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
   .badge-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  .explain-badge { background:#2563eb; color:#fff; font-size:.76rem; font-weight:800; padding:3px 11px; border-radius:999px; }
-  .step-badge { background:#0f172a; color:#7dd3fc; font-family:Consolas,monospace; font-size:.76rem; font-weight:700; padding:3px 10px; border-radius:999px; }
-  #explain { font-size:.98rem; font-weight:700; color:#1e3a8a; }
+  .pill-ui { display:inline-flex; align-items:center; justify-content:center; gap:5px; font-size:.76rem; font-weight:800; padding:4px 11px; border-radius:999px; }
+  .explain-badge { background:#2563eb; color:#fff; }
+  .step-badge { background:#0f172a; color:#7dd3fc; font-family:Consolas,monospace; }
+  #explain { font-size:.98rem; font-weight:700; color:var(--explain-ink); }
   .ctrl-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-  .ctrl-btn { background:#fff; color:#1e293b; border:1px solid #cbd5e1; padding:4px 10px; font-size:.78rem; border-radius:8px; font-weight:700; cursor:pointer; }
-  .ctrl-btn:hover { background:#e2e8f0; }
+  .ctrl-btn { display:inline-flex; align-items:center; justify-content:center; background:var(--card); color:var(--ink); border:1px solid var(--border); padding:5px 11px; font-size:.78rem; border-radius:9px; font-weight:700; cursor:pointer; }
+  .ctrl-btn:hover:not(:disabled) { filter:brightness(.95); }
+  .ctrl-btn:disabled { opacity:.45; cursor:default; }
   .ctrl-btn.on { background:#2563eb; color:#fff; border-color:#2563eb; }
 
-  /* Pipeline SVG */
-  .pipe-box { padding:12px 16px; overflow:hidden; }
-  #pipeSvg { width:100%; height:auto; display:block; }
-  .pipe-node { transition:all .3s ease; }
-  .pipe-glow { filter:drop-shadow(0 0 8px rgba(59,130,246,.55)); }
-  @keyframes dashFlow { to { stroke-dashoffset:-24; } }
-  .pipe-wire { stroke-dasharray:7 5; transition:stroke .25s, stroke-width .25s, opacity .25s; opacity:.35; }
-  .pipe-wire.on { opacity:1; stroke-width:3.5; animation:dashFlow .65s linear infinite; }
+  /* Clickable Timeline Scrubber */
+  .timeline { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed rgba(59,130,246,.35); }
+  .tstep { display:inline-flex; align-items:center; justify-content:center; font-family:Consolas,monospace; font-size:.74rem; font-weight:700; padding:3px 9px; border-radius:999px; background:var(--card); color:var(--sub); border:1px solid var(--border); cursor:pointer; transition:all .2s; }
+  .tstep:hover { border-color:#3b82f6; color:var(--ink); }
+  .tstep.done { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+  .tstep.now { background:#2563eb; color:#fff; border-color:#1d4ed8; transform:scale(1.06); box-shadow:0 2px 10px rgba(37,99,235,.35); }
 
-  /* CLI Terminal */
-  .term { background:#0f172a; border-radius:12px; padding:12px 14px; color:#e2e8f0; font-family:Consolas,"Courier New",monospace; font-size:.9rem; }
-  #log { height:210px; overflow:auto; white-space:pre-wrap; margin-bottom:10px; padding-right:4px; }
+  /* O(1) vs O(N) Complexity Meter */
+  .perf-bar { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; padding:10px 14px; background:var(--card); border-radius:12px; border:1px solid var(--border); font-size:.8rem; }
+  @media (max-width:650px){ .perf-bar { grid-template-columns:1fr; } }
+  .perf-track { height:10px; background:var(--pill-bg); border-radius:999px; overflow:hidden; margin-top:4px; }
+  .perf-fill { height:100%; border-radius:999px; transition:width .4s ease; }
+
+  /* Pipeline SVG */
+  .pipe-box { padding:10px 14px; overflow:hidden; }
+  #pipeSvg { width:100%; height:auto; display:block; }
+  .pipe-node { transition:all .28s ease; }
+  .pipe-glow { filter:drop-shadow(0 0 9px rgba(59,130,246,.65)); }
+  @keyframes dashFlow { to { stroke-dashoffset:-24; } }
+  .pipe-wire { stroke-dasharray:7 5; transition:stroke .25s, stroke-width .25s, opacity .25s; opacity:.32; }
+  .pipe-wire.on { opacity:1; stroke-width:3.5; animation:dashFlow .6s linear infinite; }
+
+  /* Terminal & Presets */
+  .term { background:var(--term-bg); border-radius:12px; padding:12px 14px; color:#e2e8f0; font-family:Consolas,"Courier New",monospace; font-size:.88rem; border:1px solid var(--term-bd); }
+  #log { height:205px; overflow:auto; white-space:pre-wrap; margin-bottom:10px; padding-right:4px; }
   #log .in { color:#7dd3fc; font-weight:700; } #log .ok { color:#86efac; } #log .err { color:#fca5a5; } #log .info { color:#fcd34d; }
   .row { display:flex; gap:8px; }
-  .row input { flex:1; background:#1e293b; border:1px solid #334155; color:#fff; border-radius:8px; padding:9px 12px; font-family:inherit; font-size:.93rem; outline:none; }
+  .row input { flex:1; background:var(--term-in); border:1px solid var(--term-bd); color:#fff; border-radius:9px; padding:9px 12px; font-family:inherit; font-size:.92rem; outline:none; }
   .row input:focus { border-color:#60a5fa; }
-  button { cursor:pointer; border:0; border-radius:9px; padding:8px 13px; font-weight:700; font-family:inherit; transition:transform .12s, filter .12s, box-shadow .15s; }
-  button:hover { transform:translateY(-1px); filter:brightness(1.06); }
-  .go { background:var(--blue); color:#fff; }
-  .preset { background:#e0e7ff; color:#312e81; margin:5px 6px 0 0; font-size:.82rem; border:1px solid #c7d2fe; }
-  .preset.playing { background:#2563eb; color:#fff; box-shadow:0 0 0 3px rgba(37,99,235,.25); }
-  .reset { background:#fee2e2; color:#b91c1c; margin:5px 0 0 0; font-size:.82rem; }
+  button { cursor:pointer; border:0; border-radius:9px; font-weight:700; font-family:inherit; transition:transform .12s, filter .12s; }
+  button:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.06); }
+  .go { display:inline-flex; align-items:center; justify-content:center; background:var(--blue); color:#fff; padding:8px 15px; }
+  .preset-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .preset { display:inline-flex; align-items:center; justify-content:center; background:#e0e7ff; color:#312e81; padding:7px 12px; font-size:.8rem; border:1px solid #c7d2fe; }
+  :root[data-theme="dark"] .preset { background:#1e1b4b; color:#c7d2fe; border-color:#4338ca; }
+  .preset.playing { background:#2563eb; color:#fff; box-shadow:0 0 0 3px rgba(37,99,235,.32); border-color:#2563eb; }
+  .reset { display:inline-flex; align-items:center; justify-content:center; background:#fee2e2; color:#b91c1c; padding:7px 12px; font-size:.8rem; }
 
   /* Stacked Memory Gauge */
   .stat { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-  .pill { background:#f1f5f9; border-radius:999px; padding:5px 12px; font-size:.84rem; font-weight:700; }
+  .pill { display:inline-flex; align-items:center; gap:5px; background:var(--pill-bg); border-radius:999px; padding:5px 12px; font-size:.82rem; font-weight:700; }
   .pill b { color:var(--blue); }
-  .gauge-wrap { position:relative; padding-top:6px; margin-bottom:6px; }
-  .stack-gauge { height:28px; border-radius:14px; background:#e2e8f0; overflow:hidden; display:flex; align-items:stretch; border:1px solid #cbd5e1; }
-  .seg { height:100%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.72rem; font-weight:800; font-family:Consolas,monospace; transition:width .45s ease; white-space:nowrap; overflow:hidden; border-right:1px solid rgba(255,255,255,.4); }
+  .gauge-wrap { position:relative; padding-top:8px; margin-bottom:6px; }
+  .stack-gauge { height:28px; border-radius:14px; background:var(--pill-bg); overflow:hidden; display:flex; align-items:stretch; border:1px solid var(--border); }
+  .seg { height:100%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.72rem; font-weight:800; font-family:Consolas,monospace; transition:width .45s ease; white-space:nowrap; overflow:hidden; border-right:1px solid rgba(255,255,255,.35); cursor:pointer; }
   .limit-pin { position:absolute; top:0; bottom:0; width:3px; background:#ef4444; z-index:4; pointer-events:none; transition:left .35s ease; display:none; }
-  .limit-pin::after { content:"한도"; position:absolute; top:-15px; left:-11px; font-size:.66rem; font-weight:800; color:#dc2626; background:#fee2e2; padding:0 4px; border-radius:4px; }
+  .limit-pin::after { content:"한도"; position:absolute; top:-14px; left:-11px; font-size:.66rem; font-weight:800; color:#dc2626; background:#fee2e2; padding:0 4px; border-radius:4px; }
 
-  /* 2D MinHeap Binary Tree SVG + 1D Array */
-  .heap-stage { background:linear-gradient(180deg,#fffbeb 0%,#ffffff 100%); border:1.5px solid #fde68a; border-radius:12px; padding:8px 10px; }
+  /* 2D MinHeap Binary Tree */
+  .heap-stage { background:var(--heap-bg); border:1.5px solid var(--heap-bd); border-radius:14px; padding:10px 12px; }
   #heapSvg { width:100%; height:auto; display:block; }
   @keyframes nodePop { 0% { transform:scale(.3); opacity:0; } 65% { transform:scale(1.12); opacity:1; } 100% { transform:scale(1); opacity:1; } }
-  @keyframes rootRadar { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(1.55); opacity:0; } }
-  .hnode { transform-box:fill-box; transform-origin:center; }
+  @keyframes rootRadar { 0% { transform:scale(1); opacity:.75; } 100% { transform:scale(1.6); opacity:0; } }
+  @keyframes swapFlash { 0%,100% { stroke-opacity:.25; } 50% { stroke-opacity:1; } }
+  .hnode { transform-box:fill-box; transform-origin:center; cursor:pointer; }
   .hnode.new-anim { animation:nodePop .45s ease; }
-  .radar-ring { transform-box:fill-box; transform-origin:center; animation:rootRadar 1.6s ease-out infinite; }
-  .heap-arr { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed #fcd34d; align-items:center; }
-  .arr-cell { background:#fff7ed; border:1.5px solid #fdba74; border-radius:8px; padding:3px 8px; font-family:Consolas,monospace; font-size:.75rem; }
-  .arr-cell.root { background:#fef3c7; border-color:#d97706; font-weight:800; }
+  .radar-ring { transform-box:fill-box; transform-origin:center; animation:rootRadar 1.5s ease-out infinite; }
+  .swap-arc { animation:swapFlash .9s ease-in-out infinite; }
+  .swap-note { font-size:.76rem; font-weight:700; color:#b45309; background:#fef3c7; border-radius:8px; padding:4px 10px; margin-top:6px; display:none; }
+  :root[data-theme="dark"] .swap-note { background:#451a03; color:#fcd34d; }
+  .heap-arr { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--heap-bd); align-items:center; }
+  .arr-cell { background:var(--soft); border:1.5px solid #fdba74; border-radius:8px; padding:3px 8px; font-family:Consolas,monospace; font-size:.74rem; cursor:pointer; }
+  .arr-cell.root { background:#fef3c7; color:#92400e; border-color:#d97706; font-weight:800; }
 
-  /* LRU Train with HEAD/TAIL Sentinels & Arrows */
-  .lru-stage { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-height:82px; padding:6px 4px; }
-  .sentinel { background:#e2e8f0; color:#475569; border:2px dashed #94a3b8; border-radius:10px; padding:10px 10px; font-family:Consolas,monospace; font-size:.76rem; font-weight:800; text-align:center; }
-  .arrow-bi { font-size:1.1rem; font-weight:900; color:#10b981; user-select:none; }
-  .chip { background:#ecfdf5; border:2px solid #34d399; border-radius:12px; padding:8px 12px; min-width:124px; position:relative; transition:transform .35s ease, box-shadow .35s ease; }
+  /* LRU Train & Cross-Highlight */
+  .lru-stage { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-height:84px; padding:6px 4px; }
+  .sentinel { background:var(--soft); color:var(--sub); border:2px dashed #94a3b8; border-radius:10px; padding:9px 10px; font-family:Consolas,monospace; font-size:.74rem; font-weight:800; text-align:center; }
+  .arrow-bi { font-size:1.05rem; font-weight:900; color:#10b981; user-select:none; }
+  .chip { background:rgba(16,185,129,.1); border:2px solid #34d399; border-radius:12px; padding:8px 12px; min-width:120px; position:relative; transition:transform .3s ease, box-shadow .3s ease; cursor:pointer; }
   .chip .k { font-family:Consolas,monospace; font-weight:800; font-size:.9rem; }
-  .chip .m { font-size:.76rem; color:#475569; }
-  .chip.mru { background:#dcfce7; border-color:#16a34a; }
-  .chip.lru { background:#fef2f2; border-color:#ef4444; }
-  .chip.promo { animation:promoPop .65s ease; box-shadow:0 0 0 4px rgba(22,163,74,.28); }
-  @keyframes promoPop { 0% { transform:translateY(10px) scale(.82); } 60% { transform:translateY(-4px) scale(1.07); } 100% { transform:translateY(0) scale(1); } }
+  .chip .m { font-size:.75rem; color:var(--sub); }
+  .chip.mru { background:rgba(22,163,74,.14); border-color:#16a34a; }
+  .chip.lru { background:rgba(239,68,68,.12); border-color:#ef4444; }
+  .chip.promo { animation:promoPop .6s ease; box-shadow:0 0 0 4px rgba(22,163,74,.32); }
+  @keyframes promoPop { 0% { transform:translateY(8px) scale(.85); } 60% { transform:translateY(-4px) scale(1.06); } 100% { transform:translateY(0) scale(1); } }
   .tag { position:absolute; top:-10px; right:8px; font-size:.66rem; font-weight:800; color:#fff; border-radius:999px; padding:1px 8px; }
   .chip.mru .tag { background:#16a34a; } .chip.lru .tag { background:#ef4444; }
-  .evict-ghost { background:#fee2e2; border:2px dashed #ef4444; color:#b91c1c; border-radius:10px; padding:7px 12px; font-size:.82rem; font-weight:800; animation:evictShake .55s ease; display:none; }
+  .evict-ghost { background:#fee2e2; border:2px dashed #ef4444; color:#b91c1c; border-radius:10px; padding:5px 12px; font-size:.8rem; font-weight:800; animation:evictShake .5s ease; display:none; }
   @keyframes evictShake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-6px); } 75% { transform:translateX(6px); } }
 
-  /* HashMap Calc + Buckets + Enlarged Chaining Chain */
-  .hash-calc { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:10px; padding:8px 12px; font-family:Consolas,monospace; font-size:.83rem; color:#1e40af; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  /* Cross-structure Highlight Halo */
+  .xlink-on { box-shadow:0 0 0 4px rgba(139,92,246,.55) !important; border-color:#8b5cf6 !important; transform:translateY(-2px); }
+
+  /* HashMap Buckets + Chaining + Resize Badge */
+  .hash-calc { background:var(--soft); border:1.5px solid #93c5fd; border-radius:10px; padding:8px 12px; font-family:Consolas,monospace; font-size:.82rem; color:var(--blue); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .resize-toast { display:none; background:#059669; color:#fff; font-size:.78rem; font-weight:800; padding:3px 10px; border-radius:999px; animation:nodePop .45s ease; }
   .buckets { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
-  @media (max-width:700px){ .buckets { grid-template-columns:repeat(4,1fr); } }
-  .bk { border:2px solid #bfdbfe; background:#f8fafc; border-radius:9px; min-height:54px; padding:4px 6px; font-size:.72rem; font-family:Consolas,monospace; transition:all .3s; }
+  @media (max-width:740px){ .buckets { grid-template-columns:repeat(4,1fr); } }
+  .bk { border:2px solid var(--border); background:var(--soft); border-radius:9px; min-height:54px; padding:4px 6px; font-size:.72rem; font-family:Consolas,monospace; transition:all .25s; }
   .bk i { display:block; color:var(--sub); font-style:normal; font-size:.66rem; margin-bottom:2px; }
-  .bk.hit { background:#dbeafe; border-color:#3b82f6; }
-  .bk.col { background:#fef3c7; border-color:#f59e0b; }
-  .bk.flash { box-shadow:0 0 0 3px rgba(37,99,235,.4); transform:scale(1.04); }
+  .bk-item { cursor:pointer; padding:1px 3px; border-radius:4px; }
+  .bk.hit { background:rgba(59,130,246,.14); border-color:#3b82f6; }
+  .bk.col { background:rgba(245,158,11,.18); border-color:#f59e0b; }
+  .bk.flash { box-shadow:0 0 0 3px rgba(37,99,235,.45); transform:scale(1.04); }
   .chain-panel { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
-  .chain-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; background:#fffbeb; border:1.5px solid #fcd34d; border-radius:10px; padding:7px 10px; font-family:Consolas,monospace; font-size:.8rem; }
+  .chain-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; background:var(--soft); border:1.5px solid #fcd34d; border-radius:10px; padding:7px 10px; font-family:Consolas,monospace; font-size:.8rem; }
   .chain-bk { background:#f59e0b; color:#fff; font-weight:800; padding:2px 8px; border-radius:6px; }
-  .chain-nd { background:#fff; border:1.5px solid #f59e0b; padding:2px 8px; border-radius:6px; font-weight:700; animation:nodePop .4s ease; }
+  .chain-nd { background:var(--card); border:1.5px solid #f59e0b; padding:2px 8px; border-radius:6px; font-weight:700; cursor:pointer; animation:nodePop .4s ease; }
 
   .empty { color:var(--sub); font-size:.88rem; padding:8px 4px; }
   .hint { color:var(--sub); font-size:.82rem; margin-top:6px; }
   footer { text-align:center; color:var(--sub); font-size:.84rem; padding-bottom:28px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>5-1- Mini Redis 인터랙티브 애니메이션 스튜디오</h1>
-  <p>플레이(▶) 버튼을 누르면 <b>실시간 파이프라인 · 2D 최소 힙 이진 트리 · 양손 LRU 기차 · 해시 체이닝</b>이 한눈에 움직입니다</p>
+  <div class="header-inner">
+    <div>
+      <h1>5-1- Mini Redis 애니메이션 스튜디오</h1>
+      <p>플레이(▶)를 누르면 <b>실시간 파이프라인 · 2D 최소 힙 트리 · 양손 LRU 기차 · 해시 체이닝 &amp; 2배 증축</b>이 한눈에 움직입니다</p>
+    </div>
+    <button class="theme-btn" id="btnTheme">🌙 다크 모드</button>
+  </div>
 </header>
 <main>
-  <!-- 0. Real-Time Interpreter & Playback Controls -->
+  <!-- 0. Live Interpreter + Step Scrubber + O(1) vs O(N) Complexity Meter -->
   <div class="explain-wrap">
     <div class="explain-top">
       <div class="badge-row">
-        <span class="explain-badge">한글 실시간 통역기</span>
-        <span class="step-badge" id="stepBadge">대기 중</span>
+        <span class="pill-ui explain-badge">한글 실시간 통역기</span>
+        <span class="pill-ui step-badge" id="stepBadge">대기 중</span>
       </div>
       <div class="ctrl-row">
         <button class="ctrl-btn" id="btnPause" disabled>⏸ 일시정지</button>
-        <button class="ctrl-btn" id="btnStep" disabled>⏭ 다음 1단계</button>
-        <button class="ctrl-btn" id="btnSpeed">속도: 보통 (1x)</button>
+        <button class="ctrl-btn" id="btnStep" disabled>⏭ 1단계</button>
+        <button class="ctrl-btn" id="btnSpeed">속도: 1x</button>
       </div>
     </div>
-    <div id="explain">아래 <b>▶ 플레이 버튼</b> 중 하나를 누르면 모든 자료구조 애니메이션이 한 번에 살아 움직여요!</div>
+    <div id="explain">아래 <b>▶ 플레이 버튼</b> 중 하나를 누르면 한 단계씩 애니메이션과 한글 해설이 함께 진행돼요!</div>
+    <div class="timeline" id="timelineBar" style="display:none"></div>
+    <div class="perf-bar">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-weight:700">
+          <span style="color:var(--green)">⚡ Mini Redis 실제 탐색 (O(1) / O(log N))</span>
+          <span id="perfOurs">1회 즉시 해결</span>
+        </div>
+        <div class="perf-track"><div class="perf-fill" id="barOurs" style="width:8%;background:var(--green)"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-weight:700">
+          <span style="color:var(--red)">🐢 일반 리스트 전수 탐색이었다면 (O(N))</span>
+          <span id="perfLinear">0개 순회</span>
+        </div>
+        <div class="perf-track"><div class="perf-fill" id="barLinear" style="width:5%;background:var(--red)"></div></div>
+      </div>
+    </div>
   </div>
 
-  <!-- A. Live Architecture Pipeline SVG -->
+  <!-- A. Live Pipeline Architecture SVG -->
   <section class="card pipe-box">
-    <svg id="pipeSvg" viewBox="0 0 1120 132" role="img" aria-label="실시간 엔진 파이프라인">
+    <svg id="pipeSvg" viewBox="0 0 1120 128" role="img" aria-label="실시간 엔진 파이프라인">
       <defs>
         <marker id="pa" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#3b82f6"/></marker>
         <marker id="pg" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#10b981"/></marker>
         <marker id="po" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#f59e0b"/></marker>
         <marker id="pr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ef4444"/></marker>
       </defs>
-      <!-- Wires -->
-      <line id="wCli" class="pipe-wire" x1="168" y1="66" x2="255" y2="66" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#pa)"/>
-      <line id="wHash" class="pipe-wire" x1="455" y1="45" x2="555" y2="28" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#pa)"/>
-      <line id="wLru" class="pipe-wire" x1="455" y1="66" x2="555" y2="66" stroke="#10b981" stroke-width="2.5" marker-end="url(#pg)"/>
-      <line id="wHeap" class="pipe-wire" x1="455" y1="88" x2="555" y2="104" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#po)"/>
-      <path id="wEvict" class="pipe-wire" d="M775,66 L875,66" fill="none" stroke="#ef4444" stroke-width="2.5" marker-end="url(#pr)"/>
+      <line id="wCli" class="pipe-wire" x1="168" y1="64" x2="255" y2="64" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#pa)"/>
+      <line id="wHash" class="pipe-wire" x1="455" y1="44" x2="555" y2="27" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#pa)"/>
+      <line id="wLru" class="pipe-wire" x1="455" y1="64" x2="555" y2="64" stroke="#10b981" stroke-width="2.5" marker-end="url(#pg)"/>
+      <line id="wHeap" class="pipe-wire" x1="455" y1="84" x2="555" y2="101" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#po)"/>
+      <path id="wEvict" class="pipe-wire" d="M775,64 L875,64" fill="none" stroke="#ef4444" stroke-width="2.5" marker-end="url(#pr)"/>
 
-      <!-- Nodes -->
       <g id="nCli" class="pipe-node">
-        <rect x="12" y="28" width="154" height="76" rx="12" fill="#0f172a"/>
-        <text x="89" y="56" font-size="13" font-weight="800" fill="#7dd3fc" text-anchor="middle">1. CLI 입력</text>
-        <text id="pipeCmdTxt" x="89" y="80" font-size="11.5" fill="#e2e8f0" text-anchor="middle" font-family="Consolas,monospace">(대기 중)</text>
+        <rect x="12" y="26" width="154" height="76" rx="12" fill="#0f172a"/>
+        <text x="89" y="54" font-size="13" font-weight="800" fill="#7dd3fc" text-anchor="middle">1. CLI 입력</text>
+        <text id="pipeCmdTxt" x="89" y="78" font-size="11.5" fill="#e2e8f0" text-anchor="middle" font-family="Consolas,monospace">(대기 중)</text>
       </g>
       <g id="nCore" class="pipe-node">
-        <rect x="260" y="22" width="192" height="88" rx="14" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
-        <text x="356" y="48" font-size="14" font-weight="800" fill="#312e81" text-anchor="middle">2. MiniRedis 코어</text>
-        <text id="pipeStepTxt" x="356" y="72" font-size="11.5" fill="#4338ca" text-anchor="middle">만료 확인 · 용량 계산</text>
-        <text x="356" y="92" font-size="11" fill="#6366f1" text-anchor="middle">Record.lru_node 직결</text>
+        <rect x="260" y="20" width="192" height="88" rx="14" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+        <text x="356" y="46" font-size="14" font-weight="800" fill="#312e81" text-anchor="middle">2. MiniRedis 코어</text>
+        <text x="356" y="70" font-size="11.5" fill="#4338ca" text-anchor="middle">만료 확인 · 바이트 계산</text>
+        <text x="356" y="90" font-size="11" fill="#6366f1" text-anchor="middle">Record.lru_node 직결</text>
       </g>
-      <g id="nHash" class="pipe-node">
-        <rect x="560" y="10" width="212" height="34" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-        <text x="666" y="32" font-size="12.5" font-weight="800" fill="#1d4ed8" text-anchor="middle">HashMap 우편함 O(1)</text>
-      </g>
-      <g id="nLru" class="pipe-node">
-        <rect x="560" y="49" width="212" height="34" rx="9" fill="#d1fae5" stroke="#10b981" stroke-width="2"/>
-        <text x="666" y="71" font-size="12.5" font-weight="800" fill="#047857" text-anchor="middle">DLL 기차 줄 (MRU ↔ LRU)</text>
-      </g>
-      <g id="nHeap" class="pipe-node">
-        <rect x="560" y="88" width="212" height="34" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-        <text x="666" y="110" font-size="12.5" font-weight="800" fill="#b45309" text-anchor="middle">MinHeap 2D 트리 (TTL)</text>
-      </g>
+      <g id="nHash" class="pipe-node"><rect x="560" y="9" width="212" height="34" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/><text x="666" y="31" font-size="12.5" font-weight="800" fill="#1d4ed8" text-anchor="middle">HashMap 우편함 O(1)</text></g>
+      <g id="nLru" class="pipe-node"><rect x="560" y="47" width="212" height="34" rx="9" fill="#d1fae5" stroke="#10b981" stroke-width="2"/><text x="666" y="69" font-size="12.5" font-weight="800" fill="#047857" text-anchor="middle">DLL 기차 줄 (MRU ↔ LRU)</text></g>
+      <g id="nHeap" class="pipe-node"><rect x="560" y="85" width="212" height="34" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/><text x="666" y="107" font-size="12.5" font-weight="800" fill="#b45309" text-anchor="middle">MinHeap 2D 트리 (TTL)</text></g>
       <g id="nEvict" class="pipe-node">
-        <rect x="880" y="30" width="224" height="72" rx="12" fill="#fff1f2" stroke="#fda4af" stroke-width="2"/>
-        <text x="992" y="58" font-size="13" font-weight="800" fill="#be123c" text-anchor="middle">자동 정리 / 퇴거 상태</text>
-        <text id="pipeEvictTxt" x="992" y="82" font-size="12" fill="#e11d48" text-anchor="middle">정상 범위 (여유 있음)</text>
+        <rect x="880" y="28" width="224" height="72" rx="12" fill="#fff1f2" stroke="#fda4af" stroke-width="2"/>
+        <text x="992" y="56" font-size="13" font-weight="800" fill="#be123c" text-anchor="middle">자동 정리 / 퇴거 상태</text>
+        <text id="pipeEvictTxt" x="992" y="80" font-size="12" fill="#e11d48" text-anchor="middle">정상 범위 (여유 있음)</text>
       </g>
     </svg>
   </section>
 
-  <!-- Grid Top: Left = CLI + Play Presets, Right = Stacked Memory + 2D MinHeap Binary Tree -->
+  <!-- Grid Top -->
   <div class="grid">
-    <section class="card" id="cardCli">
-      <h2>1. 명령어 실행 &amp; 플레이 시나리오 <span class="sublbl">(직접 입력하거나 버튼을 누르세요)</span></h2>
+    <section class="card">
+      <h2>1. 명령어 입력 &amp; 플레이 시나리오 <span class="sublbl">(직접 치거나 ▶ 버튼을 누르세요)</span></h2>
       <div class="term">
         <div id="log"></div>
         <div class="row"><input id="cmd" placeholder='예: SET user:1 "Alice" 또는 EXPIRE user:1 8' autocomplete="off"><button class="go" id="run">실행</button></div>
       </div>
-      <div style="margin-top:8px">
-        <button class="preset" data-p="official">▶ 1. 명세서 공식 + TTL 트리 풀코스</button>
-        <button class="preset" data-p="heap">▶ 2. 최소 힙(MinHeap) 2D 트리 정렬 &amp; 만료</button>
-        <button class="preset" data-p="collision">▶ 3. 해시 충돌(체이닝) &amp; LRU 승격</button>
-        <button class="preset" data-p="oom">▶ 4. 단일 엔트리 OOM 방어</button>
+      <div class="preset-wrap">
+        <button class="preset" data-p="official">▶ 1. 공식 예시 + TTL</button>
+        <button class="preset" data-p="heap">▶ 2. 최소 힙 2D 트리 (_heapify)</button>
+        <button class="preset" data-p="collision">▶ 3. 해시 충돌 &amp; LRU 승격</button>
+        <button class="preset" data-p="oom">▶ 4. 단일 엔트리 OOM</button>
+        <button class="preset" data-p="resize">▶ 5. 75% 초과 ➔ 32칸 2배 증축</button>
         <button class="reset" id="reset">초기화</button>
       </div>
       <div class="hint">명령어: SET · GET · DEL · EXISTS · DBSIZE · KEYS · CONFIG SET maxmemory N · INFO memory · EXPIRE · TTL</div>
     </section>
 
-    <section class="card" id="cardHeap">
-      <h2>2. 냉장고 용량(메모리) &amp; 3. TTL 최소 힙 2D 트리</h2>
+    <section class="card">
+      <h2>2. 냉장고 용량 &amp; 3. TTL 최소 힙 2D 트리 <span class="sublbl" id="xlinkHint">(키 위에 마우스를 올리면 3곳이 같이 빛나요!)</span></h2>
       <div class="stat">
         <span class="pill">used_memory <b id="um">0</b>B</span>
         <span class="pill">maxmemory <b id="mm">0</b>B</span>
@@ -214,44 +270,42 @@
         <div class="stack-gauge" id="stackGauge"></div>
         <div class="limit-pin" id="limitPin"></div>
       </div>
-      <div class="hint" id="ghint" style="margin-bottom:12px">무제한(0). CONFIG SET maxmemory 30 을 입력해 보세요.</div>
+      <div class="hint" id="ghint" style="margin-bottom:10px">무제한(0). CONFIG SET maxmemory 30 으로 제한해 보세요.</div>
 
       <div class="heap-stage">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <b style="font-size:.86rem;color:#b45309">완전 이진 트리 (가장 빨리 만료될 키 = 0번 꼭대기)</b>
+          <b style="font-size:.85rem;color:#b45309">완전 이진 트리 (가장 급한 키 = 0번 꼭대기)</b>
           <span style="font-size:.74rem;color:#92400e">루트 peek() → O(1)</span>
         </div>
-        <svg id="heapSvg" viewBox="0 0 520 225" role="img" aria-label="최소 힙 2D 완전 이진 트리">
-          <text x="260" y="116" text-anchor="middle" font-size="13.5" fill="#94a3b8">▶ 2번 버튼(최소 힙 쇼케이스) 또는 EXPIRE 를 실행하면</text>
-          <text x="260" y="138" text-anchor="middle" font-size="13.5" fill="#94a3b8">이 자리에 2D 이진 트리가 살아 움직이며 정렬됩니다!</text>
-        </svg>
-        <div class="heap-arr" id="heapArr">
-          <span style="font-size:.74rem;color:#92400e;font-weight:700">1차원 배열 _data[ ]:</span>
-          <span style="font-size:.76rem;color:#94a3b8">(비어 있음)</span>
-        </div>
+        <svg id="heapSvg" viewBox="0 0 520 225" role="img" aria-label="최소 힙 2D 완전 이진 트리"></svg>
+        <div class="swap-note" id="swapNote"></div>
+        <div class="heap-arr" id="heapArr"></div>
       </div>
     </section>
   </div>
 
-  <!-- Section C: LRU Doubly Linked List Train -->
-  <section class="card" id="cardLru">
+  <!-- LRU Train -->
+  <section class="card">
     <h2>
-      <span>4. LRU 양손 기차 줄 (DoublyLinkedList) <span class="sublbl">— 왼쪽 = 최신 1등석(MRU) · 오른쪽 = 퇴거 1순위(LRU)</span></span>
+      <span>4. LRU 양손 기차 줄 (DoublyLinkedList) <span class="sublbl">— 왼쪽 = 1등석 MRU · 오른쪽 = 퇴거 1순위 LRU</span></span>
       <span class="evict-ghost" id="evictNotice"></span>
     </h2>
     <div class="lru-stage" id="lru"></div>
   </section>
 
-  <!-- Section D: HashMap Calculator + Buckets + Chaining Zoom -->
-  <section class="card" id="cardHash">
-    <h2>5. 해시맵 우편함 &amp; 체이닝 (HashMap) <span id="cap" class="sublbl"></span></h2>
+  <!-- HashMap Buckets + Chaining -->
+  <section class="card">
+    <h2>
+      <span>5. 해시맵 우편함 &amp; 체이닝 (HashMap) <span id="cap" class="sublbl"></span></span>
+      <span class="resize-toast" id="resizeToast">🚀 적재율 0.75 초과! 16칸 ➔ 32칸 2배 증축 완료!</span>
+    </h2>
     <div class="hash-calc" id="hashCalc">
-      <span>🔢 <b>실시간 해시 계산기:</b> 키를 입력하면 글자 코드 × 소수 31 로 몇 번 우편함에 들어가는지 즉시 계산해 보여드려요!</span>
+      <span>🔢 <b>실시간 해시 계산기:</b> 키를 넣으면 소수 31 롤링 해시 결과를 바로 보여드려요!</span>
       <span id="hashEq"></span>
     </div>
     <div class="buckets" id="buckets"></div>
     <div class="chain-panel" id="chainPanel"></div>
-    <div class="hint">🟦 파란 칸 = 1개 저장 · 🟨 노란 칸 = <b>해시 충돌</b>(같은 우편함에서 이중 연결 리스트 체이닝으로 줄줄이 연결!) · 적재율 &gt; 0.75 이면 2배 증축</div>
+    <div class="hint">🟦 파란 칸 = 1개 저장 · 🟨 노란 칸 = <b>해시 충돌</b>(이중 연결 리스트 체이닝!) · 키 위에 마우스를 올리면 LRU 기차/최소 힙과 동시에 연결되어 표시됩니다.</div>
   </section>
 </main>
 <footer>5-1- Mini Redis · 이 페이지는 학습용 실시간 시각화이며 실제 Python 구현은 <code>mini_redis/</code> 폴더에 있습니다.</footer>
@@ -259,12 +313,10 @@
 <script>
 (function(){
   var enc = new TextEncoder();
-  // store 배열 순서: 앞(0) = MRU(최신), 뒤 = LRU(오래됨)
-  var store = [];
-  // real MinHeap array tracking [ {k, exp, ttl0, isNew} ]
-  var heapData = [];
+  var store = [], heapData = [];
   var maxmem = 0, evicted = 0, capacity = 16;
   var lastBucket = -1, lastKey = '', lastPromoKey = '', lastEvictMsg = '', lastOp = '';
+  var lastSwaps = [], lastHeapReason = '', lastResized = false, hoverKey = '';
   var colors = ['#3b82f6','#10b981','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#6366f1'];
 
   // Playback state
@@ -287,17 +339,19 @@
       if (i < 4) parts.push("'" + key[i] + "'(" + code + ")");
     }
     if (key.length > 4) parts.push('...');
-    return { idx: h, text: '_hash("' + key + '") = [' + parts.join('·31+') + '] % ' + cap + ' → #' + h + '번 우편함' };
+    return { idx:h, text:'_hash("' + key + '") = [' + parts.join('·31+') + '] % ' + cap + ' → #' + h + '번 우편함' };
   }
   function now(){ return Date.now() / 1000; }
 
-  // Genuine MinHeap Push & Pop (with _heapify_up / _heapify_down)
   function heapPush(k, exp, ttl0){
+    lastSwaps = []; lastHeapReason = '';
     heapData.push({ k:k, exp:exp, ttl0:ttl0, fresh:true });
     var idx = heapData.length - 1;
     while (idx > 0) {
       var p = Math.floor((idx - 1) / 2);
       if (heapData[idx].exp < heapData[p].exp) {
+        lastSwaps.push([p, idx]);
+        lastHeapReason = '🔼 _heapify_up 자리 바꿈: [' + idx + '] ' + k + '(' + ttl0 + 's) < 부모 [' + p + '] ' + heapData[p].k + '(' + Math.max(1, Math.ceil(heapData[p].exp - now())) + 's)!';
         var tmp = heapData[idx]; heapData[idx] = heapData[p]; heapData[p] = tmp;
         idx = p;
       } else break;
@@ -309,11 +363,13 @@
     var root = heapData[0];
     heapData[0] = heapData.pop();
     var idx = 0, n = heapData.length;
+    lastSwaps = [];
     while (true) {
       var sm = idx, l = 2 * idx + 1, r = 2 * idx + 2;
       if (l < n && heapData[l].exp < heapData[sm].exp) sm = l;
       if (r < n && heapData[r].exp < heapData[sm].exp) sm = r;
       if (sm !== idx) {
+        lastSwaps.push([idx, sm]);
         var tmp = heapData[idx]; heapData[idx] = heapData[sm]; heapData[sm] = tmp;
         idx = sm;
       } else break;
@@ -321,20 +377,20 @@
     return root;
   }
 
-  function purge(){
+  function purge(quiet){
     var t = now(), changed = false;
     while (heapData.length) {
-      var top = heapData[0];
-      var idx = find(top.k);
-      // Lazy deletion for stale entries
+      var top = heapData[0], idx = find(top.k);
       if (idx < 0 || store[idx].exp !== top.exp) { heapPop(); continue; }
       if (top.exp <= t) {
         heapPop();
         var dead = store.splice(idx, 1)[0];
-        say('(자동 만료) ' + dead.k + ' (TTL 종료 -> MinHeap pop)', 'info');
-        explain('⏰ 최소 힙 꼭대기(0번)에 있던 "' + dead.k + '" 의 유통기한이 다 되어 힙에서 꺼내고(pop) 자동 삭제했어요!');
-        lastEvictMsg = '⏰ 만료 삭제: ' + dead.k;
-        lastOp = 'expire';
+        if (!quiet) {
+          say('(자동 만료) ' + dead.k + ' (TTL 종료 -> MinHeap pop)', 'info');
+          explain('⏰ 최소 힙 0번 루트 "' + dead.k + '" 가 만료되어 pop()으로 꺼내고, _heapify_down 으로 다음 급한 키를 올렸어요!');
+          lastEvictMsg = '⏰ 만료 삭제: ' + dead.k;
+          lastOp = 'expire';
+        }
         changed = true;
       } else break;
     }
@@ -355,96 +411,111 @@
   }
   var intRe = /^[+-]?\d+$/;
 
-  function run(line){
+  function updateComplexity(ourSteps){
+    var n = Math.max(1, store.length);
+    $('perfOurs').textContent = ourSteps + '회 (O(1) / O(log N))';
+    $('perfLinear').textContent = n + '칸 전부 확인 (O(N))';
+    $('barOurs').style.width = Math.min(100, Math.max(10, ourSteps * 10)) + '%';
+    $('barLinear').style.width = Math.min(100, Math.max(12, (n / 15) * 100)) + '%';
+  }
+
+  function run(line, quiet){
     var t = tokens(line.trim());
-    if (t === null) { explain('큰따옴표(") 짝이 맞지 않아 실행할 수 없어요.'); return '(error) ERR unbalanced quotes in request'; }
+    if (t === null) { if (!quiet) explain('큰따옴표(") 짝이 맞지 않아요.'); return '(error) ERR unbalanced quotes in request'; }
     if (!t.length) return null;
     var c = t[0].toUpperCase(), a = t.slice(1);
     var wrong = "(error) ERR wrong number of arguments for '" + c + "' command";
-    lastPromoKey = ''; lastEvictMsg = '';
+    lastPromoKey = ''; lastEvictMsg = ''; lastResized = false; lastSwaps = []; lastHeapReason = '';
 
     if (c === 'SET') {
       if (a.length !== 2) return wrong;
-      purge();
+      purge(quiet);
       var b = bytes(a[0], a[1]);
       if (maxmem > 0 && b > maxmem) {
-        lastOp = 'oom';
-        lastEvictMsg = '🚫 저장 거절 (OOM): ' + a[0] + ' (' + b + 'B > ' + maxmem + 'B)';
-        explain('🚫 "' + a[0] + '" 하나만 해도 ' + b + '바이트라서 제한(' + maxmem + 'B)을 초과해요! 기존 데이터는 지우지 않고 OOM 에러를 돌려줬어요.');
+        lastOp = 'oom'; lastEvictMsg = '🚫 저장 거절 (OOM): ' + a[0];
+        if (!quiet) explain('🚫 "' + a[0] + '" 하나만 해도 ' + b + 'B라서 제한(' + maxmem + 'B)을 초과해요! 기존 데이터는 지키고 OOM 에러 반환!');
+        updateComplexity(1);
         return "(error) OOM command not allowed when used_memory > 'maxmemory'";
       }
       var i = find(a[0]), col = colors[store.length % colors.length];
       if (i >= 0) { col = store[i].col; store.splice(i, 1); }
-      var evictedNames = [], freedSum = 0;
+      var evictedNames = [];
       if (maxmem > 0) {
         while (used() + b > maxmem && store.length) {
           var v = store.pop(); evicted++;
-          var vb = bytes(v.k, v.v); freedSum += vb;
-          evictedNames.push(v.k + '(' + vb + 'B)');
-          say('(LRU 퇴거) ' + v.k + ' (-' + vb + 'B)', 'info');
+          evictedNames.push(v.k + '(' + bytes(v.k, v.v) + 'B)');
+          if (!quiet) say('(LRU 퇴거) ' + v.k, 'info');
         }
       }
       store.unshift({ k:a[0], v:a[1], exp:null, ttl0:1, fresh:true, col:col });
+      var prevCap = capacity;
       while (store.length / capacity > 0.75) capacity *= 2;
+      if (capacity > prevCap) lastResized = true;
       var hd = hashDetail(a[0], capacity);
       lastBucket = hd.idx; lastKey = a[0]; lastPromoKey = a[0];
       $('hashEq').textContent = hd.text;
-      if (evictedNames.length) {
-        lastOp = 'evict';
-        lastEvictMsg = '👋 LRU 퇴거: ' + evictedNames.join(', ');
-        explain('📦 "' + a[0] + '"(' + b + 'B) 을 넣으려니 냉장고(' + maxmem + 'B)가 넘쳐서, 기차 맨 끝 가장 오래된 [' + evictedNames.join(', ') + '] 을(를) 퇴거시키고 ' + hd.idx + '번 우편함 & 1등석에 넣었어요!');
-      } else {
-        lastOp = 'set';
-        explain('📦 "' + a[0] + '" = "' + a[1] + '" (' + b + 'B) 을(를) ' + hd.idx + '번 우편함에 넣고, 기차 맨 앞 1등석(MRU)에 태웠어요!');
+      if (!quiet) {
+        if (lastResized) {
+          lastOp = 'set';
+          explain('🚀 우편함 적재율이 0.75를 넘어 ' + prevCap + '칸 ➔ ' + capacity + '칸으로 2배 자동 증축하고 모든 키를 재정리(_resize)했어요!');
+        } else if (evictedNames.length) {
+          lastOp = 'evict'; lastEvictMsg = '👋 LRU 퇴거: ' + evictedNames.join(', ');
+          explain('📦 "' + a[0] + '"(' + b + 'B) 을 넣으려다 한도(' + maxmem + 'B) 초과! 기차 맨 뒤 [' + evictedNames.join(', ') + '] 퇴거 후 ' + hd.idx + '번 칸 & 1등석 저장!');
+        } else {
+          lastOp = 'set';
+          explain('📦 "' + a[0] + '" = "' + a[1] + '" (' + b + 'B) ➔ ' + hd.idx + '번 우편함 & 기차 맨 앞 1등석(MRU) 저장!');
+        }
       }
+      updateComplexity(1);
       return 'OK';
     }
     if (c === 'GET') {
       if (a.length !== 1) return wrong;
-      purge();
+      purge(quiet);
       var hd2 = hashDetail(a[0], capacity);
-      lastBucket = hd2.idx; lastKey = a[0];
-      $('hashEq').textContent = hd2.text;
+      lastBucket = hd2.idx; lastKey = a[0]; $('hashEq').textContent = hd2.text;
       var i2 = find(a[0]);
       if (i2 < 0) {
         lastOp = 'miss';
-        explain('🔍 ' + hd2.idx + '번 우편함을 열었는데 "' + a[0] + '" 이 없어요(삭제됐거나 만료됨)! 그래서 (nil) 반환!');
-        return '(nil)';
+        if (!quiet) explain('🔍 ' + hd2.idx + '번 우편함에 "' + a[0] + '" 이 없어서 (nil) 반환! (만료·퇴거된 키)');
+        updateComplexity(1); return '(nil)';
       }
       var e = store.splice(i2, 1)[0]; e.fresh = true; store.unshift(e);
       lastPromoKey = e.k; lastOp = 'get';
-      explain('⚡ ' + hd2.idx + '번 우편함에서 "' + e.k + '" 를 O(1)로 찾았고, 방금 썼으니 Record.lru_node 로 기차 맨 앞 1등석(MRU)으로 승격했어요!');
-      return '"' + e.v + '"';
+      if (!quiet) explain('⚡ ' + hd2.idx + '번 우편함에서 "' + e.k + '" 를 O(1)에 찾고, Record.lru_node 로 기차 1등석(MRU) 승격!');
+      updateComplexity(1); return '"' + e.v + '"';
     }
     if (c === 'DEL') {
-      if (a.length !== 1) return wrong; purge();
+      if (a.length !== 1) return wrong; purge(quiet);
       var i3 = find(a[0]); if (i3 < 0) return '(integer) 0';
       store.splice(i3, 1); lastOp = 'del';
-      explain('🗑️ "' + a[0] + '" 을(를) 우편함과 기차에서 지우고 메모리 사용량도 줄였어요!');
-      return '(integer) 1';
+      if (!quiet) explain('🗑️ "' + a[0] + '" 을(를) 우편함·기차·메모리에서 완전히 삭제했어요!');
+      updateComplexity(1); return '(integer) 1';
     }
-    if (c === 'EXISTS') { if (a.length !== 1) return wrong; purge(); lastOp = 'get'; return '(integer) ' + (find(a[0]) >= 0 ? 1 : 0); }
-    if (c === 'DBSIZE') { if (a.length) return wrong; purge(); lastOp = 'get'; return '(integer) ' + store.length; }
+    if (c === 'EXISTS') { if (a.length !== 1) return wrong; purge(quiet); lastOp = 'get'; updateComplexity(1); return '(integer) ' + (find(a[0]) >= 0 ? 1 : 0); }
+    if (c === 'DBSIZE') { if (a.length) return wrong; purge(quiet); lastOp = 'get'; updateComplexity(1); return '(integer) ' + store.length; }
     if (c === 'KEYS') {
-      if (a.length) return wrong; purge(); lastOp = 'get';
+      if (a.length) return wrong; purge(quiet); lastOp = 'get';
       if (!store.length) return '(empty array)';
-      explain('📋 살아 있는 모든 키 ' + store.length + '개의 이름표를 모았어요!');
+      if (!quiet) explain('📋 살아 있는 모든 키 ' + store.length + '개 목록을 출력했어요!');
+      updateComplexity(store.length);
       return store.map(function(e, n){ return (n + 1) + '. "' + e.k + '"'; }).join('\n');
     }
     if (c === 'CONFIG') {
       if (a.length !== 3 || a[0].toUpperCase() !== 'SET' || a[1].toLowerCase() !== 'maxmemory') return wrong;
       if (!intRe.test(a[2]) || parseInt(a[2], 10) < 0) return '(error) ERR value is not an integer or out of range';
       maxmem = parseInt(a[2], 10); lastOp = 'config';
-      explain('🧊 냉장고 최대 크기(maxmemory)를 ' + maxmem + '바이트로 정했어요! 이제 이 용량을 넘기면 가장 오래된 키가 쫓겨납니다.');
-      return 'OK';
+      if (!quiet) explain('🧊 냉장고 용량(maxmemory)을 ' + maxmem + '바이트로 설정했어요!');
+      updateComplexity(1); return 'OK';
     }
     if (c === 'INFO') {
-      if (a.length !== 1 || a[0].toLowerCase() !== 'memory') return wrong; purge(); lastOp = 'info';
-      explain('📊 현재 메모리 사용량(' + used() + 'B) · 제한(' + maxmem + 'B) · 퇴거 횟수(' + evicted + '건)를 집계했습니다!');
+      if (a.length !== 1 || a[0].toLowerCase() !== 'memory') return wrong; purge(quiet); lastOp = 'info';
+      if (!quiet) explain('📊 사용 중 ' + used() + 'B · 제한 ' + maxmem + 'B · 누적 퇴거 ' + evicted + '건 보고!');
+      updateComplexity(1);
       return 'used_memory:' + used() + '\nmaxmemory:' + maxmem + '\nevicted_keys:' + evicted;
     }
     if (c === 'EXPIRE') {
-      if (a.length !== 2) return wrong; purge();
+      if (a.length !== 2) return wrong; purge(quiet);
       if (!intRe.test(a[1])) return '(error) ERR value is not an integer or out of range';
       var i4 = find(a[0]); if (i4 < 0) { lastOp = 'miss'; return '(integer) 0'; }
       var s = parseInt(a[1], 10);
@@ -453,90 +524,96 @@
       store[i4].exp = expAt; store[i4].ttl0 = s;
       heapPush(a[0], expAt, s);
       lastOp = 'heap';
-      var rootKey = heapData.length ? heapData[0].k : a[0];
-      if (rootKey === a[0] && heapData.length > 1) {
-        explain('⏳ "' + a[0] + '" (' + s + '초) 가 다른 키들보다 유통기한이 짧아서, _heapify_up 으로 2D 트리 맨 꼭대기(0번)에 올라왔어요!');
-      } else {
-        explain('⏳ "' + a[0] + '" 에 ' + s + '초 유통기한을 붙여 2D 최소 힙 트리에 올렸어요! (현재 꼭대기 1등: ' + rootKey + ')');
+      if (!quiet) {
+        if (lastHeapReason) explain('⏳ ' + lastHeapReason + ' (꼭대기 1등: ' + heapData[0].k + ')');
+        else explain('⏳ "' + a[0] + '" (' + s + '초) 을 2D 최소 힙 트리에 올렸어요! (현재 꼭대기: ' + heapData[0].k + ')');
       }
+      updateComplexity(Math.max(1, Math.ceil(Math.log2(heapData.length + 1))));
       return '(integer) 1';
     }
     if (c === 'TTL') {
-      if (a.length !== 1) return wrong; purge();
+      if (a.length !== 1) return wrong; purge(quiet);
       var i5 = find(a[0]); lastOp = 'heap';
-      if (i5 < 0) { explain('🔍 "' + a[0] + '" 이(가) 만료되어 사라졌으므로 -2 를 반환합니다.'); return '(integer) -2'; }
+      if (i5 < 0) return '(integer) -2';
       if (store[i5].exp === null) return '(integer) -1';
       var rem = Math.max(0, Math.ceil(store[i5].exp - now()));
-      explain('⏱️ "' + a[0] + '" 는 앞으로 약 ' + rem + '초 뒤 만료됩니다!');
-      return '(integer) ' + rem;
+      if (!quiet) explain('⏱️ "' + a[0] + '" 남은 유통기한은 약 ' + rem + '초! (최소 힙 루트 peek O(1))');
+      updateComplexity(1); return '(integer) ' + rem;
     }
     return "(error) ERR unknown command '" + t[0] + "'";
   }
 
   function updatePipeline(cmdStr){
     $('pipeCmdTxt').textContent = cmdStr.length > 21 ? cmdStr.slice(0, 20) + '…' : cmdStr;
-    var wCli = $('wCli'), wHash = $('wHash'), wLru = $('wLru'), wHeap = $('wHeap'), wEvict = $('wEvict');
-    wCli.className.baseVal = 'pipe-wire on';
-    wHash.className.baseVal = 'pipe-wire' + ((lastOp==='set'||lastOp==='get'||lastOp==='evict'||lastOp==='del'||lastOp==='miss') ? ' on' : '');
-    wLru.className.baseVal = 'pipe-wire' + ((lastOp==='set'||lastOp==='get'||lastOp==='evict'||lastOp==='del') ? ' on' : '');
-    wHeap.className.baseVal = 'pipe-wire' + ((lastOp==='heap'||lastOp==='expire') ? ' on' : '');
-    wEvict.className.baseVal = 'pipe-wire' + ((lastOp==='evict'||lastOp==='oom'||lastOp==='expire') ? ' on' : '');
-
-    $('nHash').className.baseVal = 'pipe-node' + (wHash.className.baseVal.indexOf('on')>0 ? ' pipe-glow' : '');
-    $('nLru').className.baseVal = 'pipe-node' + (wLru.className.baseVal.indexOf('on')>0 ? ' pipe-glow' : '');
-    $('nHeap').className.baseVal = 'pipe-node' + (wHeap.className.baseVal.indexOf('on')>0 ? ' pipe-glow' : '');
+    $('wCli').className.baseVal = 'pipe-wire on';
+    $('wHash').className.baseVal = 'pipe-wire' + ((lastOp==='set'||lastOp==='get'||lastOp==='evict'||lastOp==='del'||lastOp==='miss') ? ' on' : '');
+    $('wLru').className.baseVal = 'pipe-wire' + ((lastOp==='set'||lastOp==='get'||lastOp==='evict'||lastOp==='del') ? ' on' : '');
+    $('wHeap').className.baseVal = 'pipe-wire' + ((lastOp==='heap'||lastOp==='expire') ? ' on' : '');
+    $('wEvict').className.baseVal = 'pipe-wire' + ((lastOp==='evict'||lastOp==='oom'||lastOp==='expire') ? ' on' : '');
+    $('nHash').className.baseVal = 'pipe-node' + ($('wHash').className.baseVal.indexOf('on')>0 ? ' pipe-glow' : '');
+    $('nLru').className.baseVal = 'pipe-node' + ($('wLru').className.baseVal.indexOf('on')>0 ? ' pipe-glow' : '');
+    $('nHeap').className.baseVal = 'pipe-node' + ($('wHeap').className.baseVal.indexOf('on')>0 ? ' pipe-glow' : '');
     $('pipeEvictTxt').textContent = lastEvictMsg ? lastEvictMsg : (maxmem > 0 ? ('사용 ' + used() + 'B / 한도 ' + maxmem + 'B') : '정상 범위 (여유 있음)');
   }
 
-  function exec(line){
+  function exec(line, skipDraw){
     say('mini-redis> ' + line, 'in');
-    var r = run(line);
+    var r = run(line, skipDraw);
     if (r !== null) say(r, r.indexOf('(error)') === 0 ? 'err' : 'ok');
-    updatePipeline(line);
-    render();
+    if (!skipDraw) { updatePipeline(line); render(); }
+  }
+
+  function setHover(k){
+    if (hoverKey === k) return;
+    hoverKey = k;
+    $('xlinkHint').textContent = k ? ('🔗 "' + k + '" 가 해시맵 · LRU 기차 · 최소 힙에서 동시에 강조됨!') : '(키 위에 마우스를 올리면 3곳이 같이 빛나요!)';
+    renderCrossHighlight();
+  }
+  function renderCrossHighlight(){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-key]'), function(el){
+      el.classList.toggle('xlink-on', !!hoverKey && el.getAttribute('data-key') === hoverKey);
+    });
   }
 
   function render(){
-    // 1. Stacked Memory Gauge
     var u = used();
     $('um').textContent = u; $('mm').textContent = maxmem; $('ev').textContent = evicted; $('kc').textContent = store.length;
     var scaleMax = maxmem > 0 ? Math.max(maxmem * 1.15, u, 30) : Math.max(u * 1.2, 40);
     var sg = $('stackGauge'); sg.innerHTML = '';
-    // Draw from oldest to newest so adding/evicting aligns visually
     for (var idx = store.length - 1; idx >= 0; idx--) {
-      var item = store[idx], ib = bytes(item.k, item.v);
-      var pctW = (ib / scaleMax) * 100;
-      var seg = document.createElement('div');
-      seg.className = 'seg';
-      seg.style.width = pctW.toFixed(2) + '%';
-      seg.style.background = item.col;
-      seg.textContent = pctW > 11 ? (item.k + ' ' + ib + 'B') : (ib + 'B');
-      seg.title = item.k + ' = "' + item.v + '" (' + ib + ' bytes)';
-      sg.appendChild(seg);
+      (function(item){
+        var ib = bytes(item.k, item.v), pctW = (ib / scaleMax) * 100;
+        var seg = document.createElement('div');
+        seg.className = 'seg'; seg.setAttribute('data-key', item.k);
+        seg.style.width = pctW.toFixed(2) + '%'; seg.style.background = item.col;
+        seg.textContent = pctW > 11 ? (item.k + ' ' + ib + 'B') : (ib + 'B');
+        seg.title = item.k + ' = "' + item.v + '" (' + ib + 'B)';
+        seg.onmouseenter = function(){ setHover(item.k); };
+        seg.onmouseleave = function(){ setHover(''); };
+        sg.appendChild(seg);
+      })(store[idx]);
     }
     var pin = $('limitPin');
     if (maxmem > 0) {
       pin.style.display = 'block';
       pin.style.left = Math.min(98, (maxmem / scaleMax) * 100).toFixed(2) + '%';
-      var rate = Math.round((u / maxmem) * 100);
-      $('ghint').textContent = '냉장고 사용률 ' + rate + '% (' + u + 'B / 최대 ' + maxmem + 'B)';
+      $('ghint').textContent = '냉장고 사용률 ' + Math.round((u / maxmem) * 100) + '% (' + u + 'B / 최대 ' + maxmem + 'B)';
     } else {
       pin.style.display = 'none';
       $('ghint').textContent = '현재 무제한(maxmemory=0)입니다. CONFIG SET maxmemory 30 으로 제한해 보세요.';
     }
 
-    // 2. Eviction Ghost Notice
     var en = $('evictNotice');
     if (lastEvictMsg) { en.textContent = lastEvictMsg; en.style.display = 'inline-block'; }
     else { en.style.display = 'none'; }
 
-    // 3. LRU Train with HEAD <-> nodes <-> TAIL
+    // LRU Train
     var L = $('lru'); L.innerHTML = '';
     var hSent = document.createElement('div'); hSent.className = 'sentinel'; hSent.innerHTML = 'HEAD<br><span style="font-size:.66rem;font-weight:500">문지기</span>';
     L.appendChild(hSent);
 
     if (!store.length) {
-      var arr0 = document.createElement('span'); arr0.className = 'arrow-bi'; arr0.textContent = '⇄'; L.appendChild(arr0);
+      var a0 = document.createElement('span'); a0.className = 'arrow-bi'; a0.textContent = '⇄'; L.appendChild(a0);
       var emp = document.createElement('span'); emp.className = 'empty'; emp.textContent = '저장된 키가 비어 있습니다'; L.appendChild(emp);
     } else {
       store.forEach(function(e, i){
@@ -544,19 +621,22 @@
         var d = document.createElement('div');
         var isMru = (i === 0), isLru = (i === store.length - 1 && store.length > 1);
         d.className = 'chip' + (isMru ? ' mru' : '') + (isLru ? ' lru' : '') + (e.k === lastPromoKey ? ' promo' : '');
+        d.setAttribute('data-key', e.k);
         var tagTxt = isMru ? (e.k === lastPromoKey ? '방금 1등석! MRU' : '1등석 MRU') : (isLru ? '퇴거 1순위 LRU' : '');
         d.innerHTML = (tagTxt ? '<span class="tag">' + tagTxt + '</span>' : '') + '<div class="k"></div><div class="m"></div>';
         d.querySelector('.k').textContent = e.k;
         d.querySelector('.m').textContent = '"' + e.v + '" · ' + bytes(e.k, e.v) + 'B' + (e.exp !== null ? ' · TTL ' + Math.max(0, Math.ceil(e.exp - now())) + 's' : '');
-        L.appendChild(d);
-        e.fresh = false;
+        d.onmouseenter = function(){ setHover(e.k); };
+        d.onmouseleave = function(){ setHover(''); };
+        L.appendChild(d); e.fresh = false;
       });
     }
-    var arrEnd = document.createElement('span'); arrEnd.className = 'arrow-bi'; arrEnd.textContent = '⇄'; L.appendChild(arrEnd);
+    var ae = document.createElement('span'); ae.className = 'arrow-bi'; ae.textContent = '⇄'; L.appendChild(ae);
     var tSent = document.createElement('div'); tSent.className = 'sentinel'; tSent.innerHTML = 'TAIL<br><span style="font-size:.66rem;font-weight:500">문지기</span>';
     L.appendChild(tSent);
 
-    // 4. HashMap Buckets + Enlarged Chaining Chains
+    // HashMap Buckets + Resize Toast + Enlarged Chaining
+    $('resizeToast').style.display = lastResized ? 'inline-block' : 'none';
     var B = $('buckets'); B.innerHTML = ''; var cnt = [];
     for (var n = 0; n < capacity; n++) cnt.push([]);
     store.forEach(function(e){ cnt[hashDetail(e.k, capacity).idx].push(e); });
@@ -565,7 +645,10 @@
       d.className = 'bk' + (arr.length === 1 ? ' hit' : '') + (arr.length > 1 ? ' col' : '') + (idx === lastBucket ? ' flash' : '');
       d.innerHTML = '<i>#' + idx + (idx === lastBucket ? ' ★' : '') + '</i>';
       arr.forEach(function(item){
-        var s = document.createElement('div'); s.textContent = item.k; s.style.fontWeight = (item.k === lastKey ? '800' : '600'); d.appendChild(s);
+        var s = document.createElement('div'); s.className = 'bk-item'; s.setAttribute('data-key', item.k);
+        s.textContent = item.k; s.style.fontWeight = (item.k === lastKey ? '800' : '600');
+        s.onmouseenter = function(){ setHover(item.k); }; s.onmouseleave = function(){ setHover(''); };
+        d.appendChild(s);
       });
       B.appendChild(d);
     });
@@ -579,8 +662,9 @@
         arr.forEach(function(item, j){
           var sep = document.createElement('span'); sep.textContent = j === 0 ? '➔' : '⇄'; sep.style.fontWeight = '900'; sep.style.color = '#d97706';
           row.appendChild(sep);
-          var nd = document.createElement('span'); nd.className = 'chain-nd';
+          var nd = document.createElement('span'); nd.className = 'chain-nd'; nd.setAttribute('data-key', item.k);
           nd.textContent = item.k + ' : "' + item.v + '"';
+          nd.onmouseenter = function(){ setHover(item.k); }; nd.onmouseleave = function(){ setHover(''); };
           row.appendChild(nd);
         });
         cp.appendChild(row);
@@ -588,47 +672,54 @@
     });
 
     renderHeap2D();
+    renderCrossHighlight();
   }
 
   function renderHeap2D(){
-    var svg = $('heapSvg'), arrEl = $('heapArr'), t = now();
-    // Filter live entries that match store (for clean tree rendering)
+    var svg = $('heapSvg'), arrEl = $('heapArr'), sn = $('swapNote'), t = now();
     var valid = [];
     for (var i = 0; i < heapData.length; i++) {
       var h = heapData[i], si = find(h.k);
       if (si >= 0 && store[si].exp === h.exp) valid.push(h);
     }
+    if (lastHeapReason) { sn.textContent = lastHeapReason; sn.style.display = 'block'; }
+    else { sn.style.display = 'none'; }
+
     if (!valid.length) {
-      svg.innerHTML = '<text x="260" y="108" text-anchor="middle" font-size="13.5" fill="#94a3b8">▶ 2번 버튼(최소 힙 쇼케이스) 또는 EXPIRE 를 실행하면</text>' +
-        '<text x="260" y="132" text-anchor="middle" font-size="13.5" fill="#94a3b8">이 자리에 2D 완전 이진 트리가 살아 움직이며 정렬됩니다!</text>';
-      arrEl.innerHTML = '<span style="font-size:.74rem;color:#92400e;font-weight:700">1차원 배열 _data[ ]:</span><span style="font-size:.76rem;color:#94a3b8">(EXPIRE 설정 시 인덱스가 표시됩니다)</span>';
+      svg.innerHTML = '<text x="260" y="106" text-anchor="middle" font-size="13.5" fill="#94a3b8">▶ 2번 버튼(최소 힙 쇼케이스) 또는 EXPIRE 를 실행하면</text>' +
+        '<text x="260" y="130" text-anchor="middle" font-size="13.5" fill="#94a3b8">2D 완전 이진 트리와 _heapify_up 자리 바꿈 애니메이션이 나타납니다!</text>';
+      arrEl.innerHTML = '<span style="font-size:.74rem;color:#92400e;font-weight:700">1차원 배열 _data[ ]:</span><span style="font-size:.76rem;color:#94a3b8">(EXPIRE 설정 시 표시)</span>';
       return;
     }
 
-    // Coordinates for up to 7 nodes (Levels 0, 1, 2) inside 520x225
     var pos = [
       { x:260, y:44 },
       { x:140, y:116 }, { x:380, y:116 },
       { x:75,  y:186 }, { x:205, y:186 }, { x:315, y:186 }, { x:445, y:186 }
     ];
     var out = '';
-    // Draw edges first
     for (var j = 1; j < Math.min(valid.length, 7); j++) {
       var p = Math.floor((j - 1) / 2);
       out += '<line x1="' + pos[p].x + '" y1="' + pos[p].y + '" x2="' + pos[j].x + '" y2="' + pos[j].y + '" stroke="#f59e0b" stroke-width="2.5" stroke-opacity="0.7"/>';
     }
-    // Draw nodes
+    // Draw swap arcs from last _heapify_up / _heapify_down
+    lastSwaps.forEach(function(pair){
+      if (pair[0] < 7 && pair[1] < 7) {
+        var a = pos[pair[0]], b = pos[pair[1]];
+        var mx = (a.x + b.x) / 2 + 24, my = (a.y + b.y) / 2;
+        out += '<path class="swap-arc" d="M' + b.x + ',' + b.y + ' Q' + mx + ',' + my + ' ' + a.x + ',' + a.y + '" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="5 4"/>';
+      }
+    });
+
     var r = 26, circ = 2 * Math.PI * r;
     for (var idx = 0; idx < Math.min(valid.length, 7); idx++) {
       var node = valid[idx], pt = pos[idx];
-      var left = Math.max(0, node.exp - t);
-      var ratio = Math.max(0, Math.min(1, left / (node.ttl0 || 1)));
-      var offset = (circ * (1 - ratio)).toFixed(1);
-      var isRoot = (idx === 0);
-      out += '<g class="hnode' + (node.fresh ? ' new-anim' : '') + '">';
-      if (isRoot) {
-        out += '<circle class="radar-ring" cx="' + pt.x + '" cy="' + pt.y + '" r="' + (r + 2) + '" fill="none" stroke="#d97706" stroke-width="2.5"/>';
-      }
+      var left = Math.max(0, node.exp - t), ratio = Math.max(0, Math.min(1, left / (node.ttl0 || 1)));
+      var offset = (circ * (1 - ratio)).toFixed(1), isRoot = (idx === 0);
+      var isHover = (hoverKey && hoverKey === node.k);
+      out += '<g class="hnode' + (node.fresh ? ' new-anim' : '') + '" data-heap-key="' + esc(node.k) + '">';
+      if (isRoot) out += '<circle class="radar-ring" cx="' + pt.x + '" cy="' + pt.y + '" r="' + (r + 2) + '" fill="none" stroke="#d97706" stroke-width="2.5"/>';
+      if (isHover) out += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + (r + 5) + '" fill="none" stroke="#8b5cf6" stroke-width="3.5"/>';
       out += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + r + '" fill="' + (isRoot ? '#fef3c7' : '#ffffff') + '" stroke="#fde68a" stroke-width="4"/>';
       out += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + r + '" fill="none" stroke="' + (isRoot ? '#d97706' : '#f59e0b') + '" stroke-width="4" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 ' + pt.x + ' ' + pt.y + ')"/>';
       out += '<text x="' + pt.x + '" y="' + (pt.y - 3) + '" text-anchor="middle" font-size="11.5" font-weight="800" fill="#0f172a" font-family="Consolas,monospace">' + left.toFixed(1) + 's</text>';
@@ -638,77 +729,120 @@
       node.fresh = false;
     }
     svg.innerHTML = out;
+    Array.prototype.forEach.call(svg.querySelectorAll('.hnode'), function(g){
+      var hk = g.getAttribute('data-heap-key');
+      g.onmouseenter = function(){ setHover(hk); };
+      g.onmouseleave = function(){ setHover(''); };
+    });
 
-    // 1D array mapping
     arrEl.innerHTML = '<span style="font-size:.74rem;color:#92400e;font-weight:700">1차원 배열 _data[ ]:</span>';
     valid.forEach(function(item, kIdx){
       var leftSec = Math.max(0, item.exp - t);
       var c = document.createElement('span');
-      c.className = 'arr-cell' + (kIdx === 0 ? ' root' : '');
+      c.className = 'arr-cell' + (kIdx === 0 ? ' root' : ''); c.setAttribute('data-key', item.k);
       c.textContent = '[' + kIdx + '] ' + item.k + ' (' + leftSec.toFixed(1) + 's)';
+      c.onmouseenter = function(){ setHover(item.k); }; c.onmouseleave = function(){ setHover(''); };
       arrEl.appendChild(c);
     });
   }
 
-  // Playback engine with Pause, Step, Speed
+  function renderTimeline(){
+    var bar = $('timelineBar');
+    if (!queue.length) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    bar.innerHTML = '';
+    queue.forEach(function(cmd, i){
+      var sp = document.createElement('button');
+      sp.className = 'tstep' + (i < qIdx - 1 ? ' done' : '') + (i === qIdx - 1 ? ' now' : '');
+      var shortLbl = (i + 1) + '. ' + (cmd.length > 16 ? cmd.slice(0, 15) + '…' : cmd);
+      sp.textContent = shortLbl;
+      sp.title = '클릭하면 ' + (i + 1) + '단계 (' + cmd + ') 로 바로 이동합니다';
+      sp.onclick = function(){ jumpToStep(i + 1); };
+      bar.appendChild(sp);
+    });
+  }
+
+  function jumpToStep(targetCount){
+    if (!queue.length) return;
+    if (timer) { clearTimeout(timer); timer = null; }
+    paused = true;
+    $('btnPause').textContent = '▶ 이어 재생'; $('btnPause').classList.add('on');
+    var savedQueue = queue.slice();
+    var savedBtn = activePresetBtn;
+    resetState(true);
+    queue = savedQueue; activePresetBtn = savedBtn;
+    if (activePresetBtn) activePresetBtn.classList.add('playing');
+    $('btnPause').disabled = false; $('btnStep').disabled = false;
+    for (var i = 0; i < targetCount; i++) {
+      var isLast = (i === targetCount - 1);
+      exec(queue[i], !isLast);
+    }
+    qIdx = targetCount;
+    $('stepBadge').textContent = 'Step ' + qIdx + ' / ' + queue.length + ' (점프)';
+    renderTimeline();
+  }
+
   function stopPlay(){
     if (timer) { clearTimeout(timer); timer = null; }
     queue = []; qIdx = 0; paused = false;
-    $('btnPause').disabled = true; $('btnPause').textContent = '⏸ 일시정지';
+    $('btnPause').disabled = true; $('btnPause').textContent = '⏸ 일시정지'; $('btnPause').classList.remove('on');
     $('btnStep').disabled = true;
     $('stepBadge').textContent = '수동 모드';
     if (activePresetBtn) { activePresetBtn.classList.remove('playing'); activePresetBtn = null; }
+    renderTimeline();
   }
 
   function advanceOne(){
-    if (qIdx >= queue.length) { stopPlay(); $('stepBadge').textContent = '재생 완료!'; return; }
-    var item = queue[qIdx++];
-    $('stepBadge').textContent = 'Step ' + qIdx + ' / ' + queue.length;
-    if (typeof item === 'number') {
-      if (!paused) timer = setTimeout(advanceOne, slowMode ? Math.round(item * 1.6) : item);
+    if (qIdx >= queue.length) {
+      if (timer) { clearTimeout(timer); timer = null; }
+      paused = false; $('btnPause').disabled = true; $('btnStep').disabled = true;
+      $('stepBadge').textContent = '재생 완료! (단계 클릭 시 되돌아감)';
+      renderTimeline();
       return;
     }
-    exec(item);
+    var item = queue[qIdx++];
+    $('stepBadge').textContent = 'Step ' + qIdx + ' / ' + queue.length;
+    exec(item, false);
+    renderTimeline();
     if (!paused) {
-      var gap = slowMode ? 1700 : 950;
+      var gap = slowMode ? 1700 : (queue.length > 10 ? 750 : 950);
       timer = setTimeout(advanceOne, gap);
     }
   }
 
   function startPreset(btn, list){
     stopPlay();
-    resetState();
+    resetState(false);
     activePresetBtn = btn; btn.classList.add('playing');
     queue = list.slice(); qIdx = 0; paused = false;
     $('btnPause').disabled = false; $('btnStep').disabled = false;
-    timer = setTimeout(advanceOne, 320);
+    renderTimeline();
+    timer = setTimeout(advanceOne, 300);
   }
 
-  function resetState(){
+  function resetState(silent){
     store = []; heapData = []; maxmem = 0; evicted = 0; capacity = 16;
     lastBucket = -1; lastKey = ''; lastPromoKey = ''; lastEvictMsg = ''; lastOp = '';
-    logEl.innerHTML = '';
-    $('hashEq').textContent = '';
-    $('pipeCmdTxt').textContent = '(대기 중)';
-    say('Mini Redis 애니메이션 스튜디오가 준비되었습니다. ▶ 버튼을 눌러보세요!', 'info');
-    explain('위쪽 ▶ 버튼 중 하나를 누르면 2D 이진 트리, 양손 기차 줄, 해시 우편함이 한 번에 살아 움직입니다!');
-    updatePipeline('대기 중');
-    render();
+    lastSwaps = []; lastHeapReason = ''; lastResized = false; hoverKey = '';
+    logEl.innerHTML = ''; $('hashEq').textContent = ''; $('pipeCmdTxt').textContent = '(대기 중)';
+    if (!silent) {
+      say('Mini Redis 애니메이션 스튜디오가 준비되었습니다. ▶ 버튼을 눌러보세요!', 'info');
+      explain('위쪽 ▶ 버튼 중 하나를 누르면 2D 이진 트리, 양손 기차 줄, 해시 우편함이 한 번에 살아 움직입니다!');
+      updatePipeline('대기 중'); updateComplexity(1); render();
+    }
   }
 
-  $('run').onclick = function(){ var v = $('cmd').value; if (v.trim()) { stopPlay(); exec(v); $('cmd').value = ''; } };
+  $('run').onclick = function(){ var v = $('cmd').value; if (v.trim()) { stopPlay(); exec(v, false); $('cmd').value = ''; } };
   $('cmd').onkeydown = function(e){ if (e.key === 'Enter') $('run').onclick(); };
-  $('reset').onclick = function(){ stopPlay(); resetState(); };
+  $('reset').onclick = function(){ stopPlay(); resetState(false); };
   $('btnPause').onclick = function(){
     if (!queue.length) return;
     paused = !paused;
     if (paused) {
       if (timer) { clearTimeout(timer); timer = null; }
-      $('btnPause').textContent = '▶ 이어 재생';
-      $('btnPause').classList.add('on');
+      $('btnPause').textContent = '▶ 이어 재생'; $('btnPause').classList.add('on');
     } else {
-      $('btnPause').textContent = '⏸ 일시정지';
-      $('btnPause').classList.remove('on');
+      $('btnPause').textContent = '⏸ 일시정지'; $('btnPause').classList.remove('on');
       advanceOne();
     }
   };
@@ -717,28 +851,28 @@
     if (!paused) {
       paused = true;
       if (timer) { clearTimeout(timer); timer = null; }
-      $('btnPause').textContent = '▶ 이어 재생';
-      $('btnPause').classList.add('on');
+      $('btnPause').textContent = '▶ 이어 재생'; $('btnPause').classList.add('on');
     }
     advanceOne();
   };
   $('btnSpeed').onclick = function(){
     slowMode = !slowMode;
-    $('btnSpeed').textContent = slowMode ? '속도: 천천히 (0.6x)' : '속도: 보통 (1x)';
+    $('btnSpeed').textContent = slowMode ? '속도: 0.6x (느림)' : '속도: 1x';
     $('btnSpeed').classList.toggle('on', slowMode);
+  };
+  $('btnTheme').onclick = function(){
+    var root = document.documentElement;
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    $('btnTheme').textContent = next === 'dark' ? '☀️ 라이트 모드' : '🌙 다크 모드';
   };
 
   var P = {
     official: [
       'CONFIG SET maxmemory 30',
-      'SET user:1 "Alice"',
-      'SET user:2 "Bob"',
-      'SET user:3 "Charlie"',
-      'GET user:1',
-      'INFO memory',
-      'EXPIRE user:3 18',
-      'EXPIRE user:2 7',
-      'TTL user:2'
+      'SET user:1 "Alice"', 'SET user:2 "Bob"', 'SET user:3 "Charlie"',
+      'GET user:1', 'INFO memory',
+      'EXPIRE user:3 18', 'EXPIRE user:2 7', 'TTL user:2'
     ],
     heap: [
       'SET k1 "22s"', 'EXPIRE k1 22',
@@ -750,18 +884,19 @@
       'TTL k4'
     ],
     collision: [
-      'SET user:1 "Alice"',
-      'SET user:5 "Eve"',
-      'SET k:1 "같은2번칸!"',
-      'SET session "같은6번칸!"',
-      'GET user:1',
-      'EXPIRE session 10'
+      'SET user:1 "Alice"', 'SET user:5 "Eve"',
+      'SET k:1 "2번충돌!"', 'SET session "6번충돌!"',
+      'GET user:1', 'EXPIRE session 10'
     ],
     oom: [
-      'CONFIG SET maxmemory 20',
-      'SET a "ok"',
-      'SET huge "12345678901234567890"',
-      'INFO memory'
+      'CONFIG SET maxmemory 20', 'SET a "ok"',
+      'SET huge "12345678901234567890"', 'INFO memory'
+    ],
+    resize: [
+      'SET p1 "1"', 'SET p2 "2"', 'SET p3 "3"', 'SET p4 "4"',
+      'SET p5 "5"', 'SET p6 "6"', 'SET p7 "7"', 'SET p8 "8"',
+      'SET p9 "9"', 'SET p10 "10"', 'SET p11 "11"', 'SET p12 "12"',
+      'SET p13 "증축트리거!"'
     ]
   };
   Array.prototype.forEach.call(document.querySelectorAll('.preset'), function(b){
@@ -769,11 +904,11 @@
   });
 
   setInterval(function(){
-    if (purge()) { updatePipeline('자동 TTL 만료'); render(); }
+    if (purge(false)) { updatePipeline('자동 TTL 만료'); render(); }
     else { renderHeap2D(); }
   }, 200);
 
-  resetState();
+  resetState(false);
 })();
 </script>
 </body>
