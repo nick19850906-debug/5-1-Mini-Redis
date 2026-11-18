@@ -52,15 +52,22 @@
   .hrow.top .bar > div { background:#d97706; } .hrow.top { font-weight:800; }
   .empty { color:var(--sub); font-size:.9rem; padding:8px 2px; }
   .hint { color:var(--sub); font-size:.85rem; margin-top:8px; }
+  .explain-box { background:#eff6ff; border:2px solid #93c5fd; border-radius:14px; padding:14px 18px; margin-bottom:18px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 14px rgba(37,99,235,.08); }
+  .explain-badge { background:#2563eb; color:#fff; font-size:.78rem; font-weight:800; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  #explain { font-size:.96rem; font-weight:600; color:#1e3a8a; }
   footer { text-align:center; color:var(--sub); font-size:.85rem; padding-bottom:30px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Mini Redis 인터랙티브 데모</h1>
-  <p>명령어를 직접 입력하고, LRU 리스트 · 해시 버킷 · TTL 힙이 움직이는 모습을 확인하세요</p>
+  <h1>5-1- Mini Redis 인터랙티브 데모</h1>
+  <p>명령어를 직접 누르고, <b>우편함(해시맵) · 양손 기차 줄(LRU) · 유통기한 진열대(최소 힙)</b>가 움직이는 모습을 구경하세요</p>
 </header>
 <main>
+  <div class="explain-box">
+    <span class="explain-badge">실시간 통역기</span>
+    <div id="explain">아래 <b>▶ 명세서 예시 자동 실행</b> 버튼을 누르면, 한 단계씩 무슨 일이 일어나는지 한국어로 바로 설명해 드려요!</div>
+  </div>
   <div class="grid">
     <section class="card">
       <h2>1. 명령어 실행 (CLI)</h2>
@@ -78,7 +85,7 @@
     </section>
 
     <section class="card">
-      <h2>2. 메모리 상태</h2>
+      <h2>2. 메모리 상태 <span style="font-weight:400;color:var(--sub);font-size:.85rem">(식당 냉장고 용량)</span></h2>
       <div class="stat">
         <span class="pill">used_memory <b id="um">0</b></span>
         <span class="pill">maxmemory <b id="mm">0</b></span>
@@ -87,23 +94,23 @@
       </div>
       <div class="gauge" id="gauge"><div id="gbar"></div></div>
       <div class="hint" id="ghint">maxmemory 가 0이면 무제한입니다. <code>CONFIG SET maxmemory 30</code> 을 입력해 보세요.</div>
-      <h2 style="margin-top:18px">3. TTL 최소 힙 (만료 임박 순)</h2>
+      <h2 style="margin-top:18px">3. TTL 최소 힙 <span style="font-weight:400;color:var(--sub);font-size:.85rem">(유통기한 진열대 — 가장 급한 키가 맨 위)</span></h2>
       <div class="heap" id="heap"><div class="empty">EXPIRE 를 설정하면 여기에 나타납니다.</div></div>
     </section>
   </div>
 
   <section class="card">
-    <h2>4. LRU 리스트 <span style="font-weight:400;color:var(--sub);font-size:.85rem">— 왼쪽이 가장 최근(MRU), 오른쪽이 가장 오래됨(퇴거 1순위)</span></h2>
+    <h2>4. LRU 리스트 <span style="font-weight:400;color:var(--sub);font-size:.85rem">— 양손 기차 줄: 왼쪽이 최근(1등석 MRU), 오른쪽이 오래됨(퇴거 1순위 LRU)</span></h2>
     <div class="lru" id="lru"><div class="empty">아직 저장된 키가 없습니다.</div></div>
   </section>
 
   <section class="card">
     <h2>5. 해시맵 버킷 <span id="cap" style="font-weight:400;color:var(--sub);font-size:.85rem"></span></h2>
     <div class="buckets" id="buckets"></div>
-    <div class="hint">노란색 칸 = 같은 버킷에 2개 이상 들어온 <b>해시 충돌</b>(체이닝으로 연결됩니다). 키 개수 / 버킷 수 &gt; 0.75 가 되면 버킷이 2배로 늘어납니다.</div>
+    <div class="hint">노란색 칸 = 같은 우편함 번호에 2개 이상 들어온 <b>해시 충돌</b>(체이닝으로 줄줄이 연결!). 키 개수 / 우편함 수 &gt; 0.75 가 되면 우편함이 2배로 늘어납니다.</div>
   </section>
 </main>
-<footer>Mini Redis · 5-1- Mini Redis · 이 페이지는 학습용 시각화이며 실제 구현은 mini_redis/ 폴더의 Python 코드입니다.</footer>
+<footer>5-1- Mini Redis · 이 페이지는 이해를 돕는 실시간 시각화이며 실제 Python 코드는 mini_redis/ 폴더에 있습니다.</footer>
 
 <script>
 (function(){
@@ -113,6 +120,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var logEl = $('log');
 
+  function explain(txt){ $('explain').textContent = txt; }
   function bytes(k, v){ return enc.encode(k).length + enc.encode(v).length; }
   function used(){ var s = 0; store.forEach(function(e){ s += bytes(e.k, e.v); }); return s; }
   function say(txt, cls){ var d = document.createElement('div'); d.className = cls || ''; d.textContent = txt; logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight; }
@@ -123,7 +131,12 @@
   function purge(){
     var t = now(), changed = false;
     for (var i = store.length - 1; i >= 0; i--) {
-      if (store[i].exp !== null && store[i].exp <= t) { say('(자동 만료) ' + store[i].k + ' 삭제', 'info'); store.splice(i, 1); changed = true; }
+      if (store[i].exp !== null && store[i].exp <= t) {
+        var expiredKey = store[i].k;
+        say('(자동 만료) ' + expiredKey + ' 삭제', 'info');
+        explain('유통기한(TTL)이 지난 "' + expiredKey + '" 키를 최소 힙에서 발견해 자동으로 삭제했습니다!');
+        store.splice(i, 1); changed = true;
+      }
     }
     return changed;
   }
@@ -145,57 +158,90 @@
 
   function run(line){
     var t = tokens(line.trim());
-    if (t === null) return '(error) ERR unbalanced quotes in request';
+    if (t === null) { explain('큰따옴표(") 짝이 맞지 않아 실행할 수 없어요.'); return '(error) ERR unbalanced quotes in request'; }
     if (!t.length) return null;
     var c = t[0].toUpperCase(), a = t.slice(1);
     var wrong = "(error) ERR wrong number of arguments for '" + c + "' command";
     if (c === 'SET') {
-      if (a.length !== 2) return wrong;
+      if (a.length !== 2) { explain('SET 뒤에는 키와 값 2개가 필요해요. 예: SET user:1 "Alice"'); return wrong; }
       expireCheck(a[0]);
       var b = bytes(a[0], a[1]);
-      if (maxmem > 0 && b > maxmem) return "(error) OOM command not allowed when used_memory > 'maxmemory'";
+      if (maxmem > 0 && b > maxmem) {
+        explain('"' + a[0] + '" 하나만 해도 ' + b + '바이트라서 제한(' + maxmem + '바이트)을 넘습니다! 기존 데이터는 지키고 저장만 거절(OOM)했어요.');
+        return "(error) OOM command not allowed when used_memory > 'maxmemory'";
+      }
       var i = find(a[0]); if (i >= 0) store.splice(i, 1);
+      var evictedNames = [];
       if (maxmem > 0) {
-        while (used() + b > maxmem && store.length) { var v = store.pop(); evicted++; say('(LRU 퇴거) ' + v.k + ' 제거', 'info'); }
+        while (used() + b > maxmem && store.length) {
+          var v = store.pop(); evicted++; evictedNames.push(v.k);
+          say('(LRU 퇴거) ' + v.k + ' 제거', 'info');
+        }
       }
       store.unshift({ k: a[0], v: a[1], exp: null, fresh: true });
+      var bucketNo = hash(a[0]);
+      if (evictedNames.length) {
+        explain('"' + a[0] + '"(' + b + '바이트)을 넣으려니 용량(' + maxmem + 'B)을 넘어서, 기차 맨 뒤 가장 오래된 [' + evictedNames.join(', ') + '] 을(를) 퇴거시키고 ' + bucketNo + '번 우편함과 1등석(MRU)에 넣었어요!');
+      } else {
+        explain('"' + a[0] + '" = "' + a[1] + '" (' + b + '바이트)을 계산해 ' + bucketNo + '번 우편함에 넣고, 기차 맨 앞 1등석(MRU)으로 세웠어요!');
+      }
       return 'OK';
     }
     if (c === 'GET') {
       if (a.length !== 1) return wrong; expireCheck();
-      var i2 = find(a[0]); if (i2 < 0) return '(nil)';
-      var e = store.splice(i2, 1)[0]; e.fresh = true; store.unshift(e); return '"' + e.v + '"';
+      var i2 = find(a[0]);
+      if (i2 < 0) {
+        explain('"' + a[0] + '" 키가 우편함에 없거나 만료되어 지워졌어요. 그래서 (nil)이 나왔고 순서는 바꾸지 않습니다!');
+        return '(nil)';
+      }
+      var e = store.splice(i2, 1)[0]; e.fresh = true; store.unshift(e);
+      explain('"' + a[0] + '" 값을 꺼내 보여드리고, 방금 찾았으니 기차 맨 앞 1등석(MRU)으로 이동시켰어요!');
+      return '"' + e.v + '"';
     }
-    if (c === 'DEL') { if (a.length !== 1) return wrong; expireCheck(); var i3 = find(a[0]); if (i3 < 0) return '(integer) 0'; store.splice(i3, 1); return '(integer) 1'; }
+    if (c === 'DEL') {
+      if (a.length !== 1) return wrong; expireCheck();
+      var i3 = find(a[0]); if (i3 < 0) { explain('"' + a[0] + '" 키가 없어서 0개를 지웠습니다.'); return '(integer) 0'; }
+      store.splice(i3, 1); explain('"' + a[0] + '" 키를 우편함과 기차에서 지우고 메모리도 되돌렸어요!'); return '(integer) 1';
+    }
     if (c === 'EXISTS') { if (a.length !== 1) return wrong; expireCheck(); return '(integer) ' + (find(a[0]) >= 0 ? 1 : 0); }
     if (c === 'DBSIZE') { if (a.length) return wrong; expireCheck(); return '(integer) ' + store.length; }
     if (c === 'KEYS') {
       if (a.length) return wrong; expireCheck();
-      if (!store.length) return '(empty array)';
+      if (!store.length) { explain('지금 들어 있는 키가 하나도 없습니다.'); return '(empty array)'; }
+      explain('현재 살아 있는 모든 키 ' + store.length + '개의 이름표를 모아서 보여드렸어요!');
       return store.map(function(e, n){ return (n + 1) + '. "' + e.k + '"'; }).join('\n');
     }
     if (c === 'CONFIG') {
       if (a.length !== 3 || a[0].toUpperCase() !== 'SET' || a[1].toLowerCase() !== 'maxmemory') return wrong;
       if (!intRe.test(a[2]) || parseInt(a[2], 10) < 0) return '(error) ERR value is not an integer or out of range';
-      maxmem = parseInt(a[2], 10); return 'OK';
+      maxmem = parseInt(a[2], 10);
+      explain('냉장고(최대 메모리) 크기를 ' + maxmem + '바이트로 설정했어요! 이 용량을 넘기면 가장 오래 안 쓴 키부터 자동 삭제됩니다.');
+      return 'OK';
     }
     if (c === 'INFO') {
       if (a.length !== 1 || a[0].toLowerCase() !== 'memory') return wrong; expireCheck();
+      explain('현재 사용 중인 바이트(' + used() + 'B), 최대 제한(' + maxmem + 'B), 지금까지 쫓겨난 키 개수(' + evicted + '개)를 보고합니다!');
       return 'used_memory:' + used() + '\nmaxmemory:' + maxmem + '\nevicted_keys:' + evicted;
     }
     if (c === 'EXPIRE') {
       if (a.length !== 2) return wrong; expireCheck();
       if (!intRe.test(a[1])) return '(error) ERR value is not an integer or out of range';
-      var i4 = find(a[0]); if (i4 < 0) return '(integer) 0';
-      var s = parseInt(a[1], 10); if (s <= 0) { store.splice(i4, 1); return '(integer) 1'; }
-      store[i4].exp = now() + s; store[i4].ttl0 = s; return '(integer) 1';
+      var i4 = find(a[0]); if (i4 < 0) { explain('"' + a[0] + '" 키가 없어서 유통기한을 붙이지 못했어요.'); return '(integer) 0'; }
+      var s = parseInt(a[1], 10); if (s <= 0) { store.splice(i4, 1); explain('0초 이하를 넣어서 "' + a[0] + '" 키를 즉시 만료(삭제)했어요!'); return '(integer) 1'; }
+      store[i4].exp = now() + s; store[i4].ttl0 = s;
+      explain('"' + a[0] + '" 키에 ' + s + '초짜리 유통기한(TTL)을 붙여 최소 힙 진열대에 올렸어요!');
+      return '(integer) 1';
     }
     if (c === 'TTL') {
       if (a.length !== 1) return wrong; expireCheck();
-      var i5 = find(a[0]); if (i5 < 0) return '(integer) -2';
-      if (store[i5].exp === null) return '(integer) -1';
-      return '(integer) ' + Math.max(0, Math.ceil(store[i5].exp - now()));
+      var i5 = find(a[0]);
+      if (i5 < 0) { explain('"' + a[0] + '" 키가 아예 없거나 이미 만료되어 삭제되었으므로 -2를 돌려드려요.'); return '(integer) -2'; }
+      if (store[i5].exp === null) { explain('"' + a[0] + '" 키는 살아있지만 유통기한이 없어서 -1을 돌려드려요.'); return '(integer) -1'; }
+      var leftSec = Math.max(0, Math.ceil(store[i5].exp - now()));
+      explain('"' + a[0] + '" 키는 앞으로 약 ' + leftSec + '초 뒤에 만료됩니다!');
+      return '(integer) ' + leftSec;
     }
+    explain('등록되지 않은 명령어("' + t[0] + '")라서 표준 에러를 출력했어요.');
     return "(error) ERR unknown command '" + t[0] + "'";
   }
 
@@ -237,7 +283,7 @@
       d.innerHTML = '<i>#' + idx + '</i>'; arr.forEach(function(k){ var s = document.createElement('div'); s.textContent = k; d.appendChild(s); });
       B.appendChild(d);
     });
-    $('cap').textContent = '— 버킷 ' + capacity + '개 · 로드팩터 ' + (store.length / capacity).toFixed(2);
+    $('cap').textContent = '— 우편함 ' + capacity + '칸 · 적재율(로드팩터) ' + (store.length / capacity).toFixed(2);
     renderHeap();
   }
   function renderHeap(){
@@ -254,9 +300,9 @@
   }
 
   function seq(list){
-    var i = 0; (function step(){ if (i < list.length) { var x = list[i++]; if (typeof x === 'number') setTimeout(step, x); else { exec(x); setTimeout(step, 550); } } })();
+    var i = 0; (function step(){ if (i < list.length) { var x = list[i++]; if (typeof x === 'number') setTimeout(step, x); else { exec(x); setTimeout(step, 700); } } })();
   }
-  function reset(){ store = []; maxmem = 0; evicted = 0; capacity = 16; logEl.innerHTML = ''; say('Mini Redis 데모를 시작합니다. 명령어를 입력해 보세요.', 'info'); render(); }
+  function reset(){ store = []; maxmem = 0; evicted = 0; capacity = 16; logEl.innerHTML = ''; say('Mini Redis 데모를 시작합니다. 명령어를 입력해 보세요.', 'info'); explain('아래 ▶ 버튼을 누르거나 명령어를 직접 입력하면, 오른쪽 자료구조들이 어떻게 움직이는지 한글로 풀어서 알려드려요!'); render(); }
 
   $('run').onclick = function(){ var v = $('cmd').value; if (v.trim()) { exec(v); $('cmd').value = ''; } };
   $('cmd').onkeydown = function(e){ if (e.key === 'Enter') $('run').onclick(); };

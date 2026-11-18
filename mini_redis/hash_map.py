@@ -1,17 +1,32 @@
+# ==============================================================================
+# [파일 이름] hash_map.py
 # [파일 역할] 직접 설계한 해시 함수 + 체이닝(이중 연결 리스트 재사용) 기반 해시맵.
-#            내장 dict/set/collections 없이 O(1) 평균 조회/삽입/삭제를 구현한다.
+#             내장 dict/set/collections 없이 평균 O(1) 조회/삽입/삭제를 구현합니다.
+# [실생활 비유] 아파트 16칸 우편함 배열입니다.
+#              1) 이름(key)을 번호 계산기(_hash)에 넣으면 몇 번 우편함인지 즉시 알려줍니다.
+#              2) 우연히 두 이름이 같은 우편함 번호를 받아도(해시 충돌),
+#                 그 칸 안의 기차 줄(DoublyLinkedList)에 나란히 매달아(체이닝) 잃어버리지 않습니다.
+#              3) 우편함이 75%(0.75) 넘게 차면 우편함을 2배로 증축(_resize)해 속도를 유지합니다!
+# ==============================================================================
 
 from doubly_linked_list import DoublyLinkedList
 
 
+# ==============================================================================
+# [1구역: 우편함에 넣을 (key, value) 편지 봉투 클래스]
+# ==============================================================================
 class HashEntry:
     """해시맵 버킷(체이닝 리스트)에 저장되는 Key-Value 쌍 데이터 객체."""
 
     def __init__(self, key, value):
-        self.key = key
-        self.value = value
+        """[함수 역할] 겉면 이름표(key)와 안쪽 내용물(value)을 하나의 세트로 묶어 저장합니다."""
+        self.key = key      # 검색할 때 비교할 키 이름 (예: "user:1")
+        self.value = value  # 키에 연결된 실제 값 (예: Record 객체)
 
 
+# ==============================================================================
+# [2구역: 체이닝 & 2배 자동 확장 해시맵(HashMap) 본체 클래스]
+# ==============================================================================
 class HashMap:
     """체이닝(이중 연결 리스트 재사용)과 동적 리사이징을 지원하는 해시맵.
 
@@ -19,52 +34,64 @@ class HashMap:
     직접 구현한 DoublyLinkedList만으로 O(1) 평균 조회/삽입/삭제를 구현합니다.
     """
 
-    LOAD_FACTOR_THRESHOLD = 0.75
+    LOAD_FACTOR_THRESHOLD = 0.75  # 우편함이 75% 초과해서 차면 2배 확장하는 기준선
 
     def __init__(self, initial_capacity=16):
-        self._capacity = initial_capacity
+        """[함수 역할] 16칸(기본값) 우편함 배열을 만들고 각 칸마다 빈 기차 줄을 걸어둡니다."""
+        self._capacity = initial_capacity  # 전체 우편함(버킷) 칸 개수
         self._buckets = [DoublyLinkedList() for _ in range(self._capacity)]
-        self._size = 0
+        self._size = 0                     # 현재 들어 있는 총 키-값 개수
 
+    # --------------------------------------------------------------------------
+    # [3구역: 직접 만든 번호 계산기(_hash) & 우편함 2배 증축(_resize)]
+    # --------------------------------------------------------------------------
     def _hash(self, key):
-        """다항식 롤링 해시(Polynomial Rolling Hash)로 문자열 키의 버킷 인덱스를 계산합니다."""
+        """[함수 역할] 다항식 롤링 해시(소수 31)로 문자열 키를 0 ~ (capacity-1) 우편함 번호로 바꿉니다."""
         key_str = str(key)
         hash_val = 0
-        prime = 31
+        prime = 31  # 글자 순서가 달라도 골고루 퍼지게 곱해 주는 소수(Prime)
         for ch in key_str:
+            # 글자의 유니코드 숫자(ord)를 더해 나가며 버킷 개수로 나눈 나머지(%)를 구함
             hash_val = (hash_val * prime + ord(ch)) % self._capacity
         return hash_val
 
     def _resize(self):
-        """로드 팩터가 0.75를 초과하면 버킷 크기를 2배 확장하고 전체 데이터를 재해싱합니다."""
-        old_buckets = self._buckets
-        self._capacity *= 2
+        """[함수 역할] 적재율(로드 팩터)이 0.75를 넘으면 우편함 칸을 2배 늘리고 모든 키를 재정리합니다."""
+        old_buckets = self._buckets        # 옛 우편함 배열을 잠시 보관
+        self._capacity *= 2                # 칸 수를 2배(예: 16 -> 32)로 증축
         self._buckets = [DoublyLinkedList() for _ in range(self._capacity)]
-        self._size = 0
+        self._size = 0                     # 다시 put()으로 넣으면서 정확한 개수를 세기 위해 0 초기화
 
+        # 옛 우편함에 있던 모든 편지를 꺼내 바뀐 capacity 기준으로 새 우편함에 재배치(Rehash)
         for bucket in old_buckets:
             for node in bucket:
                 entry = node.data
                 self.put(entry.key, entry.value)
 
+    # --------------------------------------------------------------------------
+    # [4구역: 해시맵 6대 핵심 기능 (put, get, remove, contains, keys, size)]
+    # --------------------------------------------------------------------------
     def put(self, key, value):
-        """키-값을 저장하거나 기존 키가 존재할 경우 값을 덮어씁니다."""
+        """[함수 역할] 키-값을 저장하거나, 이미 같은 키가 있으면 값을 새것으로 덮어씁니다."""
+        # 넣었을 때 적재율이 0.75를 초과하게 되면 먼저 우편함을 2배로 늘림
         if (self._size + 1) / self._capacity > self.LOAD_FACTOR_THRESHOLD:
             self._resize()
 
-        idx = self._hash(key)
-        bucket = self._buckets[idx]
+        idx = self._hash(key)         # 1) 우편함 방 번호 계산 (O(1))
+        bucket = self._buckets[idx]   # 2) 해당 방의 연결 리스트(기차 줄) 가져오기
 
+        # 3) 이미 같은 이름의 편지가 있으면 내용물(value)만 교체하고 종료
         for node in bucket:
             if node.data.key == key:
                 node.data.value = value
                 return
 
+        # 4) 처음 들어온 키면 편지 봉투(HashEntry)를 만들어 줄 끝에 매달고 개수 +1
         bucket.insert_back(HashEntry(key, value))
         self._size += 1
 
     def get(self, key):
-        """키에 매핑된 값을 조회합니다. 키가 없으면 None을 반환합니다."""
+        """[함수 역할] 키에 저장된 값을 평균 O(1)로 찾아 반환하고, 없으면 None을 돌려줍니다."""
         idx = self._hash(key)
         bucket = self._buckets[idx]
 
@@ -74,19 +101,19 @@ class HashMap:
         return None
 
     def remove(self, key):
-        """키를 찾아 삭제하고 성공 시 True, 키가 없으면 False를 반환합니다."""
+        """[함수 역할] 키를 찾아 연결 고리를 끊어 삭제하고 성공 시 True, 없으면 False를 반환합니다."""
         idx = self._hash(key)
         bucket = self._buckets[idx]
 
         for node in bucket:
             if node.data.key == key:
-                bucket.remove_node(node)
+                bucket.remove_node(node)  # 이중 연결 리스트에서 O(1) 삭제
                 self._size -= 1
                 return True
         return False
 
     def contains(self, key):
-        """특정 키의 존재 여부를 불리언으로 반환합니다."""
+        """[함수 역할] 특정 키가 해시맵 안에 있는지 True/False로 확인합니다."""
         idx = self._hash(key)
         bucket = self._buckets[idx]
 
@@ -96,7 +123,7 @@ class HashMap:
         return False
 
     def keys(self):
-        """해시맵에 저장된 모든 키를 리스트로 수집하여 반환합니다."""
+        """[함수 역할] 모든 우편함을 돌며 살아 있는 모든 키 이름을 리스트로 모아 반환합니다."""
         result = []
         for bucket in self._buckets:
             for node in bucket:
@@ -104,5 +131,5 @@ class HashMap:
         return result
 
     def size(self):
-        """현재 저장된 총 엔트리 개수를 반환합니다."""
+        """[함수 역할] 현재 해시맵에 저장된 총 키 개수를 O(1)로 반환합니다."""
         return self._size
