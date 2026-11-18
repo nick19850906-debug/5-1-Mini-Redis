@@ -114,40 +114,101 @@
   .arr-cell { background:var(--soft); border:1.5px solid #fdba74; border-radius:8px; padding:3px 8px; font-family:Consolas,monospace; font-size:.74rem; cursor:pointer; }
   .arr-cell.root { background:#fef3c7; color:#92400e; border-color:#d97706; font-weight:800; }
 
-  /* LRU Train & Cross-Highlight */
-  .lru-stage { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-height:84px; padding:6px 4px; }
-  .sentinel { background:var(--soft); color:var(--sub); border:2px dashed #94a3b8; border-radius:10px; padding:9px 10px; font-family:Consolas,monospace; font-size:.74rem; font-weight:800; text-align:center; }
-  .arrow-bi { font-size:1.05rem; font-weight:900; color:#10b981; user-select:none; }
-  .chip { background:rgba(16,185,129,.1); border:2px solid #34d399; border-radius:12px; padding:8px 12px; min-width:120px; position:relative; transition:transform .3s ease, box-shadow .3s ease; cursor:pointer; }
-  .chip .k { font-family:Consolas,monospace; font-weight:800; font-size:.9rem; }
-  .chip .m { font-size:.75rem; color:var(--sub); }
-  .chip.mru { background:rgba(22,163,74,.14); border-color:#16a34a; }
-  .chip.lru { background:rgba(239,68,68,.12); border-color:#ef4444; }
-  .chip.promo { animation:promoPop .6s ease; box-shadow:0 0 0 4px rgba(22,163,74,.32); }
-  @keyframes promoPop { 0% { transform:translateY(8px) scale(.85); } 60% { transform:translateY(-4px) scale(1.06); } 100% { transform:translateY(0) scale(1); } }
-  .tag { position:absolute; top:-10px; right:8px; font-size:.66rem; font-weight:800; color:#fff; border-radius:999px; padding:1px 8px; }
-  .chip.mru .tag { background:#16a34a; } .chip.lru .tag { background:#ef4444; }
-  .evict-ghost { background:#fee2e2; border:2px dashed #ef4444; color:#b91c1c; border-radius:10px; padding:5px 12px; font-size:.8rem; font-weight:800; animation:evictShake .5s ease; display:none; }
+  /* Section 4: Redesigned LRU Train Track & Node Anatomy */
+  .lru-zones { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; padding:8px 12px; border-radius:12px; margin-bottom:10px; font-size:.78rem; font-weight:800; background:linear-gradient(90deg,rgba(16,185,129,.16) 0%,var(--soft) 50%,rgba(239,68,68,.16) 100%); border:1px solid var(--border); }
+  .lru-zone-left { color:#059669; display:flex; align-items:center; gap:5px; }
+  .lru-zone-mid { color:var(--sub); font-weight:600; font-size:.74rem; text-align:center; }
+  .lru-zone-right { color:#dc2626; text-align:right; display:flex; align-items:center; justify-content:flex-end; gap:5px; }
+  :root[data-theme="dark"] .lru-zone-left { color:#34d399; }
+  :root[data-theme="dark"] .lru-zone-right { color:#f87171; }
+  .op-banner { background:var(--soft); border-left:4px solid var(--green); border-radius:8px; padding:7px 12px; font-size:.82rem; font-weight:600; color:var(--ink); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .op-banner.evict-mode { border-left-color:var(--red); background:rgba(239,68,68,.08); }
+  .lru-rail-wrap { position:relative; padding:12px 6px 8px; overflow-x:auto; }
+  .lru-track-line { position:absolute; left:24px; right:24px; top:50%; height:4px; background:repeating-linear-gradient(90deg,var(--border) 0 12px,transparent 12px 20px); z-index:0; pointer-events:none; }
+  .lru-stage { position:relative; z-index:1; display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-height:112px; }
+  .sentinel { background:var(--card); color:var(--sub); border:2px dashed #94a3b8; border-radius:14px; padding:12px 11px; font-family:Consolas,monospace; font-size:.75rem; font-weight:800; text-align:center; min-width:74px; box-shadow:0 3px 10px rgba(15,23,42,.05); }
+  .sentinel small { display:block; font-weight:600; font-size:.66rem; margin-top:2px; opacity:.85; }
+  .coupler { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-family:Consolas,monospace; font-size:.66rem; font-weight:800; user-select:none; padding:0 2px; }
+  .coupler .c-next { color:#10b981; }
+  .coupler .c-prev { color:#6366f1; }
+  .lru-car { background:var(--card); border:2px solid #34d399; border-radius:14px; min-width:166px; max-width:210px; overflow:hidden; box-shadow:0 5px 16px rgba(15,23,42,.06); transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease; cursor:pointer; }
+  .lru-car:hover { transform:translateY(-3px); }
+  .lru-car.mru { border-color:#16a34a; box-shadow:0 6px 20px rgba(22,163,74,.16); }
+  .lru-car.lru { border-color:#ef4444; box-shadow:0 6px 20px rgba(239,68,68,.15); }
+  .lru-car.promo { animation:promoPop .65s ease; box-shadow:0 0 0 4px rgba(22,163,74,.32); }
+  @keyframes promoPop { 0% { transform:translateY(10px) scale(.84); } 60% { transform:translateY(-5px) scale(1.06); } 100% { transform:translateY(0) scale(1); } }
+  .car-top { padding:4px 10px; font-size:.7rem; font-weight:800; display:flex; align-items:center; justify-content:space-between; background:rgba(16,185,129,.12); color:#047857; }
+  .lru-car.mru .car-top { background:#16a34a; color:#fff; }
+  .lru-car.lru .car-top { background:#ef4444; color:#fff; }
+  .car-body { padding:8px 10px; }
+  .car-key { font-family:Consolas,monospace; font-weight:800; font-size:.92rem; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .car-val { font-size:.76rem; color:var(--sub); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .car-hands { display:flex; justify-content:space-between; gap:4px; padding:4px 8px; background:var(--soft); border-top:1px solid var(--border); font-family:Consolas,monospace; font-size:.66rem; color:var(--sub); }
+  .car-btn { width:100%; border:0; border-top:1px solid var(--border); background:var(--soft); color:var(--blue); font-size:.72rem; font-weight:800; padding:5px 8px; border-radius:0; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; }
+  .car-btn:hover { background:#dbeafe; color:#1d4ed8; transform:none; }
+  .evict-dock { border:2px dashed #ef4444; background:rgba(239,68,68,.09); color:#dc2626; border-radius:14px; padding:10px 12px; font-size:.76rem; font-weight:800; animation:evictShake .55s ease; display:none; text-align:center; }
+  .evict-ghost { background:#fee2e2; border:2px dashed #ef4444; color:#b91c1c; border-radius:999px; padding:4px 12px; font-size:.76rem; font-weight:800; animation:evictShake .5s ease; display:none; }
   @keyframes evictShake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-6px); } 75% { transform:translateX(6px); } }
 
   /* Cross-structure Highlight Halo */
-  .xlink-on { box-shadow:0 0 0 4px rgba(139,92,246,.55) !important; border-color:#8b5cf6 !important; transform:translateY(-2px); }
+  .xlink-on { box-shadow:0 0 0 4px rgba(139,92,246,.58) !important; border-color:#8b5cf6 !important; transform:translateY(-2px); }
 
-  /* HashMap Buckets + Chaining + Resize Badge */
-  .hash-calc { background:var(--soft); border:1.5px solid #93c5fd; border-radius:10px; padding:8px 12px; font-family:Consolas,monospace; font-size:.82rem; color:var(--blue); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-  .resize-toast { display:none; background:#059669; color:#fff; font-size:.78rem; font-weight:800; padding:3px 10px; border-radius:999px; animation:nodePop .45s ease; }
-  .buckets { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
-  @media (max-width:740px){ .buckets { grid-template-columns:repeat(4,1fr); } }
-  .bk { border:2px solid var(--border); background:var(--soft); border-radius:9px; min-height:54px; padding:4px 6px; font-size:.72rem; font-family:Consolas,monospace; transition:all .25s; }
-  .bk i { display:block; color:var(--sub); font-style:normal; font-size:.66rem; margin-bottom:2px; }
-  .bk-item { cursor:pointer; padding:1px 3px; border-radius:4px; }
-  .bk.hit { background:rgba(59,130,246,.14); border-color:#3b82f6; }
-  .bk.col { background:rgba(245,158,11,.18); border-color:#f59e0b; }
-  .bk.flash { box-shadow:0 0 0 3px rgba(37,99,235,.45); transform:scale(1.04); }
-  .chain-panel { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
-  .chain-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; background:var(--soft); border:1.5px solid #fcd34d; border-radius:10px; padding:7px 10px; font-family:Consolas,monospace; font-size:.8rem; }
-  .chain-bk { background:#f59e0b; color:#fff; font-weight:800; padding:2px 8px; border-radius:6px; }
-  .chain-nd { background:var(--card); border:1.5px solid #f59e0b; padding:2px 8px; border-radius:6px; font-weight:700; cursor:pointer; animation:nodePop .4s ease; }
+  /* Section 5: Redesigned HashMap Calculator, Load-Factor Meter, Cabinet Grid & Chaining Microscope */
+  .hash-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .hash-actions { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .act-btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:6px 11px; border-radius:9px; font-size:.78rem; font-weight:800; border:1px solid var(--border); background:var(--soft); color:var(--ink); cursor:pointer; }
+  .act-btn.blue { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+  .act-btn.amber { background:#fef3c7; color:#b45309; border-color:#fcd34d; }
+  .act-btn.on { background:#2563eb; color:#fff; border-color:#2563eb; }
+  :root[data-theme="dark"] .act-btn.blue { background:#1e3a8a; color:#bfdbfe; border-color:#3b82f6; }
+  :root[data-theme="dark"] .act-btn.amber { background:#451a03; color:#fde68a; border-color:#d97706; }
+
+  .lf-box { background:var(--soft); border:1px solid var(--border); border-radius:12px; padding:9px 12px; margin-bottom:10px; }
+  .lf-top { display:flex; justify-content:space-between; font-size:.8rem; font-weight:700; margin-bottom:5px; flex-wrap:wrap; gap:6px; }
+  .lf-track { position:relative; height:14px; border-radius:999px; background:var(--border); overflow:visible; }
+  .lf-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#60a5fa,#3b82f6); transition:width .45s ease, background .3s; }
+  .lf-fill.warn { background:linear-gradient(90deg,#f59e0b,#10b981); }
+  .lf-line { position:absolute; left:75%; top:-4px; bottom:-4px; width:2.5px; background:#ef4444; z-index:2; }
+  .lf-line span { position:absolute; top:-16px; left:-24px; font-size:.66rem; font-weight:800; color:#dc2626; white-space:nowrap; }
+
+  .hash-stages { display:grid; grid-template-columns:1.2fr 1.2fr 1fr; gap:10px; margin-bottom:12px; }
+  @media (max-width:780px){ .hash-stages { grid-template-columns:1fr; } }
+  .hstage { background:var(--soft); border:1.5px solid var(--border); border-radius:12px; padding:9px 12px; }
+  .hstage-title { font-size:.72rem; font-weight:800; color:var(--sub); margin-bottom:5px; }
+  .char-pills { display:flex; flex-wrap:wrap; gap:4px; font-family:Consolas,monospace; font-size:.74rem; }
+  .char-pill { background:var(--card); border:1px solid #93c5fd; color:var(--blue); padding:2px 6px; border-radius:6px; font-weight:700; }
+  .hstage-result { background:rgba(59,130,246,.12); border-color:#60a5fa; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+  .hstage-badge { background:#2563eb; color:#fff; font-weight:800; font-size:.86rem; padding:4px 12px; border-radius:999px; margin-top:2px; }
+
+  .resize-toast { display:none; background:#059669; color:#fff; font-size:.76rem; font-weight:800; padding:4px 11px; border-radius:999px; animation:nodePop .45s ease; }
+  .buckets { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; }
+  @media (max-width:860px){ .buckets { grid-template-columns:repeat(4,1fr); } }
+  @media (max-width:480px){ .buckets { grid-template-columns:repeat(2,1fr); } }
+  .bk { border:2px solid var(--border); background:var(--card); border-radius:12px; min-height:68px; overflow:hidden; transition:all .25s; cursor:pointer; display:flex; flex-direction:column; }
+  .bk:hover { border-color:#60a5fa; transform:translateY(-2px); }
+  .bk-head { padding:3px 7px; font-family:Consolas,monospace; font-size:.7rem; font-weight:800; background:var(--soft); color:var(--sub); display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+  .bk-body { padding:5px 6px; display:flex; flex-direction:column; gap:3px; flex:1; }
+  .bk-empty { font-size:.68rem; color:var(--sub); opacity:.55; margin:auto 0; text-align:center; }
+  .bk-item { font-family:Consolas,monospace; font-size:.72rem; cursor:pointer; padding:2px 5px; border-radius:6px; background:rgba(59,130,246,.14); color:var(--blue); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bk.hit { border-color:#3b82f6; }
+  .bk.hit .bk-head { background:#dbeafe; color:#1d4ed8; }
+  .bk.col { border-color:#f59e0b; }
+  .bk.col .bk-head { background:#fef3c7; color:#b45309; }
+  .bk.col .bk-item { background:rgba(245,158,11,.2); color:#b45309; }
+  :root[data-theme="dark"] .bk.hit .bk-head { background:#1e3a8a; color:#bfdbfe; }
+  :root[data-theme="dark"] .bk.col .bk-head { background:#78350f; color:#fde68a; }
+  :root[data-theme="dark"] .bk.col .bk-item { color:#fcd34d; }
+  .bk.flash { box-shadow:0 0 0 3px rgba(37,99,235,.48); transform:scale(1.03); }
+  .bk.selected { box-shadow:0 0 0 3px rgba(245,158,11,.55); }
+
+  /* Chaining Microscope */
+  .chain-panel { margin-top:12px; background:var(--soft); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; }
+  .chain-title { font-size:.82rem; font-weight:800; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  .chain-track { display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
+  .chain-bk { background:#f59e0b; color:#fff; font-weight:800; padding:6px 11px; border-radius:10px; font-family:Consolas,monospace; font-size:.8rem; }
+  .chain-entry { background:var(--card); border:2px solid #f59e0b; padding:6px 11px; border-radius:10px; font-family:Consolas,monospace; font-size:.78rem; cursor:pointer; animation:nodePop .4s ease; }
+  .chain-entry b { color:var(--ink); }
+  .chain-entry .ce-link { display:block; font-size:.68rem; color:var(--purple); font-weight:700; margin-top:2px; }
 
   .empty { color:var(--sub); font-size:.88rem; padding:8px 4px; }
   .hint { color:var(--sub); font-size:.82rem; margin-top:6px; }
@@ -284,28 +345,70 @@
     </section>
   </div>
 
-  <!-- LRU Train -->
-  <section class="card">
+  <!-- Section 4: Redesigned LRU Doubly Linked List Train -->
+  <section class="card" id="secLru">
     <h2>
-      <span>4. LRU 양손 기차 줄 (DoublyLinkedList) <span class="sublbl">— 왼쪽 = 1등석 MRU · 오른쪽 = 퇴거 1순위 LRU</span></span>
+      <span>4. LRU 양손 기차 줄 (DoublyLinkedList) <span class="sublbl">— 방금 쓴 칸은 #1 1등석으로, 안 쓰는 칸은 오른쪽 끝으로!</span></span>
       <span class="evict-ghost" id="evictNotice"></span>
     </h2>
-    <div class="lru-stage" id="lru"></div>
+    <div class="lru-zones">
+      <div class="lru-zone-left">🟢 1등석 안전 구역 (MRU: HEAD 바로 뒤)</div>
+      <div class="lru-zone-mid">안 쓸수록 오른쪽으로 밀려남 ──▶</div>
+      <div class="lru-zone-right">🔴 퇴거 위험 구역 (LRU: TAIL 바로 앞)</div>
+    </div>
+    <div class="op-banner" id="lruOpBanner">
+      <span>🚂 각 칸은 <b>왼손(prev)</b>과 <b>오른손(next)</b>을 맞잡고 있어, 어떤 칸이든 고리 4개만 바꿔 <b>O(1)</b>로 맨 앞으로 이동합니다.</span>
+    </div>
+    <div class="lru-rail-wrap">
+      <div class="lru-track-line"></div>
+      <div class="lru-stage" id="lru"></div>
+    </div>
   </section>
 
-  <!-- HashMap Buckets + Chaining -->
-  <section class="card">
-    <h2>
-      <span>5. 해시맵 우편함 &amp; 체이닝 (HashMap) <span id="cap" class="sublbl"></span></span>
-      <span class="resize-toast" id="resizeToast">🚀 적재율 0.75 초과! 16칸 ➔ 32칸 2배 증축 완료!</span>
-    </h2>
-    <div class="hash-calc" id="hashCalc">
-      <span>🔢 <b>실시간 해시 계산기:</b> 키를 넣으면 소수 31 롤링 해시 결과를 바로 보여드려요!</span>
-      <span id="hashEq"></span>
+  <!-- Section 5: Redesigned HashMap Mailbox, Load Factor & Chaining Microscope -->
+  <section class="card" id="secHash">
+    <div class="hash-toolbar">
+      <h2 style="margin:0">
+        <span>5. 해시맵 우편함 &amp; 체이닝 (HashMap) <span id="cap" class="sublbl"></span></span>
+        <span class="resize-toast" id="resizeToast">🚀 적재율 0.75 초과! 우편함 2배 자동 증축 완료!</span>
+      </h2>
+      <div class="hash-actions">
+        <button class="act-btn blue" id="btnAddRand">➕ 랜덤 키 넣기</button>
+        <button class="act-btn amber" id="btnForceCol">💥 충돌 키 강제 넣기</button>
+        <button class="act-btn" id="btnHashFilter">전체 칸 보기</button>
+      </div>
     </div>
+
+    <div class="lf-box">
+      <div class="lf-top">
+        <span>📮 우편함 포화도 (적재율 = 저장된 키 ÷ 전체 칸 수)</span>
+        <span id="lfText">0 / 16 = 0.00 (0.75 초과 시 2배 증축!)</span>
+      </div>
+      <div class="lf-track">
+        <div class="lf-fill" id="lfFill" style="width:0%"></div>
+        <div class="lf-line"><span>0.75 (2배 선)</span></div>
+      </div>
+    </div>
+
+    <div class="hash-stages">
+      <div class="hstage">
+        <div class="hstage-title">① 글자별 숫자(ASCII) 분해</div>
+        <div class="char-pills" id="hashChars"><span style="color:var(--sub)">키를 넣으면 글자 코드가 표시됩니다</span></div>
+      </div>
+      <div class="hstage">
+        <div class="hstage-title">② 소수 31 다항 롤링 계산</div>
+        <div id="hashMath" style="font-family:Consolas,monospace;font-size:.78rem;color:var(--ink)">Σ (이전해시 × 31 + ord) % 칸수</div>
+      </div>
+      <div class="hstage hstage-result">
+        <div class="hstage-title">③ 배정된 우편함 (O(1))</div>
+        <div class="hstage-badge" id="hashTarget">대기 중</div>
+      </div>
+    </div>
+
     <div class="buckets" id="buckets"></div>
+
     <div class="chain-panel" id="chainPanel"></div>
-    <div class="hint">🟦 파란 칸 = 1개 저장 · 🟨 노란 칸 = <b>해시 충돌</b>(이중 연결 리스트 체이닝!) · 키 위에 마우스를 올리면 LRU 기차/최소 힙과 동시에 연결되어 표시됩니다.</div>
+    <div class="hint">💡 <b>우편함 칸을 클릭</b>하면 아래 체이닝 현미경에서 내부 연결 리스트를 자세히 볼 수 있고, 노드를 누르면 <b>4번 LRU 기차</b>의 연결 위치까지 강조됩니다!</div>
   </section>
 </main>
 <footer>5-1- Mini Redis · 이 페이지는 학습용 실시간 시각화이며 실제 Python 구현은 <code>mini_redis/</code> 폴더에 있습니다.</footer>
@@ -317,6 +420,7 @@
   var maxmem = 0, evicted = 0, capacity = 16;
   var lastBucket = -1, lastKey = '', lastPromoKey = '', lastEvictMsg = '', lastOp = '';
   var lastSwaps = [], lastHeapReason = '', lastResized = false, hoverKey = '';
+  var lastHashObj = null, selectedBucket = -1, hashFilterNonEmpty = false, lruOpText = '', randSeq = 1;
   var colors = ['#3b82f6','#10b981','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#6366f1'];
 
   // Playback state
@@ -332,14 +436,37 @@
   function say(txt, cls){ var d = document.createElement('div'); d.className = cls || ''; d.textContent = txt; logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight; }
   function find(k){ for (var i = 0; i < store.length; i++) if (store[i].k === k) return i; return -1; }
   function hashDetail(key, cap){
-    var h = 0, parts = [];
+    var h = 0, chars = [], trace = [];
     for (var i = 0; i < key.length; i++) {
       var code = key.charCodeAt(i);
       h = (h * 31 + code) % cap;
-      if (i < 4) parts.push("'" + key[i] + "'(" + code + ")");
+      chars.push({ ch:key[i], code:code });
+      if (i < 3) trace.push('(' + code + ')');
     }
-    if (key.length > 4) parts.push('...');
-    return { idx:h, text:'_hash("' + key + '") = [' + parts.join('·31+') + '] % ' + cap + ' → #' + h + '번 우편함' };
+    return {
+      key:key, idx:h, cap:cap, chars:chars,
+      formula:'"' + key + '" → 소수 31 누적 후 % ' + cap + ' = #' + h
+    };
+  }
+  function renderHashStages(hd){
+    var chEl = $('hashChars'), mEl = $('hashMath'), tEl = $('hashTarget');
+    if (!hd) {
+      chEl.innerHTML = '<span style="color:var(--sub)">키를 넣으면 글자 코드가 표시됩니다</span>';
+      mEl.textContent = 'Σ (이전해시 × 31 + ord) % 칸수';
+      tEl.textContent = '대기 중';
+      return;
+    }
+    chEl.innerHTML = '';
+    hd.chars.slice(0, 6).forEach(function(c){
+      var sp = document.createElement('span'); sp.className = 'char-pill';
+      sp.textContent = "'" + c.ch + "'(" + c.code + ")";
+      chEl.appendChild(sp);
+    });
+    if (hd.chars.length > 6) {
+      var more = document.createElement('span'); more.className = 'char-pill'; more.textContent = '…'; chEl.appendChild(more);
+    }
+    mEl.textContent = hd.formula;
+    tEl.textContent = '📬 #' + hd.idx + '번 우편함!';
   }
   function now(){ return Date.now() / 1000; }
 
@@ -438,7 +565,8 @@
         return "(error) OOM command not allowed when used_memory > 'maxmemory'";
       }
       var i = find(a[0]), col = colors[store.length % colors.length];
-      if (i >= 0) { col = store[i].col; store.splice(i, 1); }
+      var wasExisting = (i >= 0);
+      if (wasExisting) { col = store[i].col; store.splice(i, 1); }
       var evictedNames = [];
       if (maxmem > 0) {
         while (used() + b > maxmem && store.length) {
@@ -452,8 +580,14 @@
       while (store.length / capacity > 0.75) capacity *= 2;
       if (capacity > prevCap) lastResized = true;
       var hd = hashDetail(a[0], capacity);
-      lastBucket = hd.idx; lastKey = a[0]; lastPromoKey = a[0];
-      $('hashEq').textContent = hd.text;
+      lastBucket = hd.idx; selectedBucket = hd.idx; lastKey = a[0]; lastPromoKey = a[0]; lastHashObj = hd;
+      if (evictedNames.length) {
+        lruOpText = '🚪 remove_back() ➔ insert_front("' + a[0] + '"): 한도(' + maxmem + 'B) 초과로 TAIL 앞 꼬리 칸 [' + evictedNames.join(', ') + '] 을 떼어내고 "' + a[0] + '" 을 #1 1등석에 연결!';
+      } else if (wasExisting) {
+        lruOpText = '🔄 move_to_front("' + a[0] + '"): 기존 값을 덮어쓰고 TTL 초기화 후, HEAD 바로 뒤 #1 1등석(MRU)으로 양손 4개만 바꿔 O(1) 승격!';
+      } else {
+        lruOpText = '✨ insert_front("' + a[0] + '"): 새 칸을 HEAD 문지기와 기존 #1 사이에 끼워 넣어 양손(prev·next) 4개만 연결하고 O(1) 삽입 완료!';
+      }
       if (!quiet) {
         if (lastResized) {
           lastOp = 'set';
@@ -465,6 +599,8 @@
           lastOp = 'set';
           explain('📦 "' + a[0] + '" = "' + a[1] + '" (' + b + 'B) ➔ ' + hd.idx + '번 우편함 & 기차 맨 앞 1등석(MRU) 저장!');
         }
+      } else if (evictedNames.length) {
+        lastEvictMsg = '👋 LRU 퇴거: ' + evictedNames.join(', ');
       }
       updateComplexity(1);
       return 'OK';
@@ -473,15 +609,17 @@
       if (a.length !== 1) return wrong;
       purge(quiet);
       var hd2 = hashDetail(a[0], capacity);
-      lastBucket = hd2.idx; lastKey = a[0]; $('hashEq').textContent = hd2.text;
+      lastBucket = hd2.idx; selectedBucket = hd2.idx; lastKey = a[0]; lastHashObj = hd2;
       var i2 = find(a[0]);
       if (i2 < 0) {
         lastOp = 'miss';
+        lruOpText = '🔎 "' + a[0] + '" 이 기차 줄에 없어(만료 또는 퇴거됨) (nil) 을 반환했고 순서는 바꾸지 않았습니다.';
         if (!quiet) explain('🔍 ' + hd2.idx + '번 우편함에 "' + a[0] + '" 이 없어서 (nil) 반환! (만료·퇴거된 키)');
         updateComplexity(1); return '(nil)';
       }
       var e = store.splice(i2, 1)[0]; e.fresh = true; store.unshift(e);
       lastPromoKey = e.k; lastOp = 'get';
+      lruOpText = '⚡ move_to_front("' + e.k + '"): HashMap Record.lru_node 로 ' + (i2 + 1) + '번째 칸을 O(1)에 찾아, 앞뒤 고리 4개만 교체해 #1 1등석으로 이동!';
       if (!quiet) explain('⚡ ' + hd2.idx + '번 우편함에서 "' + e.k + '" 를 O(1)에 찾고, Record.lru_node 로 기차 1등석(MRU) 승격!');
       updateComplexity(1); return '"' + e.v + '"';
     }
@@ -489,6 +627,7 @@
       if (a.length !== 1) return wrong; purge(quiet);
       var i3 = find(a[0]); if (i3 < 0) return '(integer) 0';
       store.splice(i3, 1); lastOp = 'del';
+      lruOpText = '🗑️ remove_node("' + a[0] + '"): 양옆 칸끼리 직접 손을 맞잡게 하고 "' + a[0] + '" 칸을 O(1)로 떼어냈습니다!';
       if (!quiet) explain('🗑️ "' + a[0] + '" 을(를) 우편함·기차·메모리에서 완전히 삭제했어요!');
       updateComplexity(1); return '(integer) 1';
     }
@@ -607,69 +746,162 @@
     if (lastEvictMsg) { en.textContent = lastEvictMsg; en.style.display = 'inline-block'; }
     else { en.style.display = 'none'; }
 
-    // LRU Train
+    // Section 4: Redesigned LRU Train Track & Node Anatomy
+    var ob = $('lruOpBanner');
+    ob.className = 'op-banner' + ((lastOp === 'evict' || lastOp === 'expire') ? ' evict-mode' : '');
+    ob.textContent = lruOpText || '🚂 각 칸은 왼손(prev)과 오른손(next)을 맞잡고 있어, 어떤 칸이든 고리 4개만 바꿔 O(1)로 맨 앞(#1 1등석)으로 이동합니다.';
+
     var L = $('lru'); L.innerHTML = '';
-    var hSent = document.createElement('div'); hSent.className = 'sentinel'; hSent.innerHTML = 'HEAD<br><span style="font-size:.66rem;font-weight:500">문지기</span>';
+    var hSent = document.createElement('div'); hSent.className = 'sentinel';
+    hSent.innerHTML = 'HEAD<small>기관차 문지기</small>';
     L.appendChild(hSent);
 
+    function makeCoupler(isTail){
+      var c = document.createElement('div'); c.className = 'coupler';
+      c.innerHTML = '<span class="c-next">next ─▶</span><span class="c-prev" style="' + (isTail ? 'opacity:.65' : '') + '">◀─ prev</span>';
+      return c;
+    }
+
     if (!store.length) {
-      var a0 = document.createElement('span'); a0.className = 'arrow-bi'; a0.textContent = '⇄'; L.appendChild(a0);
-      var emp = document.createElement('span'); emp.className = 'empty'; emp.textContent = '저장된 키가 비어 있습니다'; L.appendChild(emp);
+      L.appendChild(makeCoupler(true));
+      var emp = document.createElement('span'); emp.className = 'empty'; emp.textContent = '저장된 키가 비어 있습니다 (SET으로 기차 칸을 추가해 보세요!)'; L.appendChild(emp);
+      L.appendChild(makeCoupler(true));
     } else {
       store.forEach(function(e, i){
-        var arr = document.createElement('span'); arr.className = 'arrow-bi'; arr.textContent = '⇄'; L.appendChild(arr);
+        L.appendChild(makeCoupler(false));
         var d = document.createElement('div');
         var isMru = (i === 0), isLru = (i === store.length - 1 && store.length > 1);
-        d.className = 'chip' + (isMru ? ' mru' : '') + (isLru ? ' lru' : '') + (e.k === lastPromoKey ? ' promo' : '');
+        d.className = 'lru-car' + (isMru ? ' mru' : '') + (isLru ? ' lru' : '') + (e.k === lastPromoKey ? ' promo' : '');
         d.setAttribute('data-key', e.k);
-        var tagTxt = isMru ? (e.k === lastPromoKey ? '방금 1등석! MRU' : '1등석 MRU') : (isLru ? '퇴거 1순위 LRU' : '');
-        d.innerHTML = (tagTxt ? '<span class="tag">' + tagTxt + '</span>' : '') + '<div class="k"></div><div class="m"></div>';
-        d.querySelector('.k').textContent = e.k;
-        d.querySelector('.m').textContent = '"' + e.v + '" · ' + bytes(e.k, e.v) + 'B' + (e.exp !== null ? ' · TTL ' + Math.max(0, Math.ceil(e.exp - now())) + 's' : '');
+        var rankLabel = '#' + (i + 1) + '번째 칸';
+        var roleLabel = isMru ? (e.k === lastPromoKey ? '방금 1등석!' : '1등석 MRU') : (isLru ? '퇴거 1순위 LRU' : '대기');
+        var prevName = (i === 0) ? 'HEAD' : store[i - 1].k;
+        var nextName = (i === store.length - 1) ? 'TAIL' : store[i + 1].k;
+        var ttlTxt = (e.exp !== null) ? ('⏳ ' + Math.max(0, Math.ceil(e.exp - now())) + 's') : '';
+
+        d.innerHTML =
+          '<div class="car-top"><span>' + rankLabel + '</span><span>' + roleLabel + '</span></div>' +
+          '<div class="car-body">' +
+            '<div class="car-key"><span class="ck-n"></span><span style="font-size:.72rem;color:var(--blue)">' + bytes(e.k, e.v) + 'B</span></div>' +
+            '<div class="car-val"></div>' +
+          '</div>' +
+          '<div class="car-hands"><span>◀ ' + esc(prevName) + '</span><span>' + esc(nextName) + ' ▶</span></div>' +
+          (!isMru ? '<button class="car-btn" type="button">⚡ GET으로 1등석 당기기</button>' : '');
+
+        d.querySelector('.ck-n').textContent = e.k;
+        d.querySelector('.car-val').textContent = '"' + e.v + '"' + (ttlTxt ? ' · ' + ttlTxt : '');
+        var btn = d.querySelector('.car-btn');
+        if (btn) {
+          btn.onclick = function(ev){
+            ev.stopPropagation();
+            stopPlay();
+            var qk = /\s/.test(e.k) ? ('"' + e.k + '"') : e.k;
+            exec('GET ' + qk, false);
+          };
+        }
         d.onmouseenter = function(){ setHover(e.k); };
         d.onmouseleave = function(){ setHover(''); };
         L.appendChild(d); e.fresh = false;
       });
+      L.appendChild(makeCoupler(true));
     }
-    var ae = document.createElement('span'); ae.className = 'arrow-bi'; ae.textContent = '⇄'; L.appendChild(ae);
-    var tSent = document.createElement('div'); tSent.className = 'sentinel'; tSent.innerHTML = 'TAIL<br><span style="font-size:.66rem;font-weight:500">문지기</span>';
+    var tSent = document.createElement('div'); tSent.className = 'sentinel';
+    tSent.innerHTML = 'TAIL<small>꼬리칸 문지기</small>';
     L.appendChild(tSent);
 
-    // HashMap Buckets + Resize Toast + Enlarged Chaining
+    var dock = document.createElement('div'); dock.className = 'evict-dock';
+    if (lastEvictMsg) { dock.style.display = 'block'; dock.textContent = lastEvictMsg; }
+    L.appendChild(dock);
+
+    // Section 5: Load-Factor Bar + 3-Stage Hash + Mailbox Cabinet Grid + Chaining Microscope
+    var lf = store.length / capacity;
+    $('lfFill').style.width = Math.min(100, Math.round(lf * 100)) + '%';
+    $('lfFill').className = 'lf-fill' + (lf >= 0.65 ? ' warn' : '');
+    $('lfText').textContent = store.length + ' / ' + capacity + ' = ' + lf.toFixed(2) + ' (0.75 초과 시 2배 증축!)';
+    renderHashStages(lastHashObj);
+
     $('resizeToast').style.display = lastResized ? 'inline-block' : 'none';
     var B = $('buckets'); B.innerHTML = ''; var cnt = [];
     for (var n = 0; n < capacity; n++) cnt.push([]);
     store.forEach(function(e){ cnt[hashDetail(e.k, capacity).idx].push(e); });
+
+    // Pick bucket for Chaining Microscope
+    if (selectedBucket < 0 || selectedBucket >= capacity || cnt[selectedBucket].length === 0) {
+      if (lastBucket >= 0 && lastBucket < capacity && cnt[lastBucket].length > 0) selectedBucket = lastBucket;
+      else {
+        selectedBucket = -1;
+        for (var fb = 0; fb < capacity; fb++) { if (cnt[fb].length > 0) { selectedBucket = fb; break; } }
+      }
+    }
+
+    var shownBuckets = 0;
     cnt.forEach(function(arr, idx){
+      if (hashFilterNonEmpty && arr.length === 0) return;
+      shownBuckets++;
       var d = document.createElement('div');
-      d.className = 'bk' + (arr.length === 1 ? ' hit' : '') + (arr.length > 1 ? ' col' : '') + (idx === lastBucket ? ' flash' : '');
-      d.innerHTML = '<i>#' + idx + (idx === lastBucket ? ' ★' : '') + '</i>';
-      arr.forEach(function(item){
-        var s = document.createElement('div'); s.className = 'bk-item'; s.setAttribute('data-key', item.k);
-        s.textContent = item.k; s.style.fontWeight = (item.k === lastKey ? '800' : '600');
-        s.onmouseenter = function(){ setHover(item.k); }; s.onmouseleave = function(){ setHover(''); };
-        d.appendChild(s);
-      });
+      var badge = arr.length > 1 ? ('⚡ ' + arr.length + ' 충돌') : (arr.length === 1 ? '1개' : '빈칸');
+      d.className = 'bk' + (arr.length === 1 ? ' hit' : '') + (arr.length > 1 ? ' col' : '') + (idx === lastBucket ? ' flash' : '') + (idx === selectedBucket ? ' selected' : '');
+      d.innerHTML = '<div class="bk-head"><span>#' + idx + (idx === lastBucket ? ' ★' : '') + '</span><span>' + badge + '</span></div><div class="bk-body"></div>';
+      var body = d.querySelector('.bk-body');
+      if (!arr.length) {
+        body.innerHTML = '<div class="bk-empty">비어있음</div>';
+      } else {
+        arr.forEach(function(item){
+          var s = document.createElement('div'); s.className = 'bk-item'; s.setAttribute('data-key', item.k);
+          s.textContent = item.k + ' → "' + item.v + '"';
+          s.onmouseenter = function(){ setHover(item.k); }; s.onmouseleave = function(){ setHover(''); };
+          s.onclick = function(ev){ ev.stopPropagation(); selectedBucket = idx; render(); };
+          body.appendChild(s);
+        });
+      }
+      d.onclick = function(){ selectedBucket = idx; render(); };
       B.appendChild(d);
     });
-    $('cap').textContent = '— 우편함 ' + capacity + '칸 · 적재율 ' + (store.length / capacity).toFixed(2) + ' (0.75 초과 시 2배)';
+    if (hashFilterNonEmpty && shownBuckets === 0) {
+      B.innerHTML = '<div class="empty" style="grid-column:1/-1">저장된 키가 들어 있는 우편함이 아직 없습니다. "➕ 랜덤 키 넣기" 를 눌러보세요!</div>';
+    }
+    $('cap').textContent = '— 우편함 ' + capacity + '칸 · 적재율 ' + lf.toFixed(2) + ' (0.75 초과 시 2배)';
 
+    // Enlarged Chaining Microscope
     var cp = $('chainPanel'); cp.innerHTML = '';
-    cnt.forEach(function(arr, idx){
-      if (arr.length > 1 || (idx === lastBucket && arr.length > 0)) {
-        var row = document.createElement('div'); row.className = 'chain-row';
-        row.innerHTML = '<span class="chain-bk">#' + idx + '번 우편함' + (arr.length > 1 ? ' (해시 충돌!)' : '') + '</span>';
+    var inspectList = [];
+    for (var ci = 0; ci < capacity; ci++) {
+      if (cnt[ci].length > 1 || (ci === selectedBucket && cnt[ci].length > 0)) inspectList.push(ci);
+    }
+    if (!inspectList.length) {
+      cp.innerHTML = '<div class="chain-title"><span>🔬 체이닝 현미경 (선택된 우편함 내부 DoublyLinkedList 보기)</span></div>' +
+        '<div class="empty">아직 우편함에 편지가 없어요. 위 버튼이나 <b>"💥 충돌 키 강제 넣기"</b> 를 눌러 체이닝을 구경해 보세요!</div>';
+    } else {
+      var titleDiv = document.createElement('div'); titleDiv.className = 'chain-title';
+      titleDiv.innerHTML = '<span>🔬 체이닝 현미경 — 우편함 속 기차 줄(DoublyLinkedList) 확대</span><span class="sublbl">노드를 클릭하면 위 4번 LRU 기차 위치와 연결됩니다</span>';
+      cp.appendChild(titleDiv);
+
+      inspectList.forEach(function(bIdx){
+        var arr = cnt[bIdx];
+        var trk = document.createElement('div'); trk.className = 'chain-track'; trk.style.marginBottom = '8px';
+        var bkTag = document.createElement('span'); bkTag.className = 'chain-bk';
+        bkTag.textContent = '#' + bIdx + '번 우편함' + (arr.length > 1 ? ' (⚡ 해시 충돌 ' + arr.length + '건 체이닝!)' : '');
+        trk.appendChild(bkTag);
+
         arr.forEach(function(item, j){
-          var sep = document.createElement('span'); sep.textContent = j === 0 ? '➔' : '⇄'; sep.style.fontWeight = '900'; sep.style.color = '#d97706';
-          row.appendChild(sep);
-          var nd = document.createElement('span'); nd.className = 'chain-nd'; nd.setAttribute('data-key', item.k);
-          nd.textContent = item.k + ' : "' + item.v + '"';
-          nd.onmouseenter = function(){ setHover(item.k); }; nd.onmouseleave = function(){ setHover(''); };
-          row.appendChild(nd);
+          var sep = document.createElement('span'); sep.textContent = (j === 0 ? '➔ [HEAD] ⇄' : '⇄');
+          sep.style.fontWeight = '900'; sep.style.color = '#d97706'; sep.style.fontSize = '.78rem';
+          trk.appendChild(sep);
+
+          var lruRank = find(item.k) + 1;
+          var nd = document.createElement('div'); nd.className = 'chain-entry'; nd.setAttribute('data-key', item.k);
+          nd.innerHTML = '<b>' + esc(item.k) + '</b> : "' + esc(item.v) + '"<span class="ce-link">🔗 Record.lru_node ➔ 기차 #' + lruRank + '번 칸</span>';
+          nd.onmouseenter = function(){ setHover(item.k); };
+          nd.onmouseleave = function(){ setHover(''); };
+          nd.onclick = function(){ setHover(item.k); };
+          trk.appendChild(nd);
         });
-        cp.appendChild(row);
-      }
-    });
+        var tailSep = document.createElement('span'); tailSep.textContent = '⇄ [TAIL]';
+        tailSep.style.fontWeight = '800'; tailSep.style.color = '#94a3b8'; tailSep.style.fontSize = '.76rem';
+        trk.appendChild(tailSep);
+        cp.appendChild(trk);
+      });
+    }
 
     renderHeap2D();
     renderCrossHighlight();
@@ -824,7 +1056,8 @@
     store = []; heapData = []; maxmem = 0; evicted = 0; capacity = 16;
     lastBucket = -1; lastKey = ''; lastPromoKey = ''; lastEvictMsg = ''; lastOp = '';
     lastSwaps = []; lastHeapReason = ''; lastResized = false; hoverKey = '';
-    logEl.innerHTML = ''; $('hashEq').textContent = ''; $('pipeCmdTxt').textContent = '(대기 중)';
+    lastHashObj = null; selectedBucket = -1; lruOpText = ''; randSeq = 1;
+    logEl.innerHTML = ''; $('pipeCmdTxt').textContent = '(대기 중)';
     if (!silent) {
       say('Mini Redis 애니메이션 스튜디오가 준비되었습니다. ▶ 버튼을 눌러보세요!', 'info');
       explain('위쪽 ▶ 버튼 중 하나를 누르면 2D 이진 트리, 양손 기차 줄, 해시 우편함이 한 번에 살아 움직입니다!');
@@ -835,6 +1068,34 @@
   $('run').onclick = function(){ var v = $('cmd').value; if (v.trim()) { stopPlay(); exec(v, false); $('cmd').value = ''; } };
   $('cmd').onkeydown = function(e){ if (e.key === 'Enter') $('run').onclick(); };
   $('reset').onclick = function(){ stopPlay(); resetState(false); };
+  $('btnAddRand').onclick = function(){
+    stopPlay();
+    var k = 'item:' + (randSeq++);
+    while (find(k) >= 0) k = 'item:' + (randSeq++);
+    exec('SET ' + k + ' "v' + randSeq + '"', false);
+  };
+  $('btnForceCol').onclick = function(){
+    stopPlay();
+    if (!store.length) {
+      exec('SET user:1 "Alice"', false);
+      exec('SET k:1 "2번충돌!"', false);
+      return;
+    }
+    var targetIdx = (selectedBucket >= 0 && selectedBucket < capacity) ? selectedBucket : hashDetail(store[0].k, capacity).idx;
+    var foundKey = '';
+    for (var n = 1; n <= 800; n++) {
+      var cand = 'c:' + n;
+      if (find(cand) < 0 && hashDetail(cand, capacity).idx === targetIdx) { foundKey = cand; break; }
+    }
+    if (!foundKey) foundKey = 'col:' + (randSeq++);
+    exec('SET ' + foundKey + ' "#' + targetIdx + '충돌"', false);
+  };
+  $('btnHashFilter').onclick = function(){
+    hashFilterNonEmpty = !hashFilterNonEmpty;
+    $('btnHashFilter').textContent = hashFilterNonEmpty ? '찬 칸만 보기 (켜짐)' : '전체 칸 보기';
+    $('btnHashFilter').classList.toggle('on', hashFilterNonEmpty);
+    render();
+  };
   $('btnPause').onclick = function(){
     if (!queue.length) return;
     paused = !paused;
