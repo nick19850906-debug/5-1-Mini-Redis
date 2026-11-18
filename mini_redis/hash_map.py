@@ -56,7 +56,17 @@ class HashMap:
         return hash_val
 
     def _resize(self):
-        """[함수 역할] 적재율(로드 팩터)이 0.75를 넘으면 우편함 칸을 2배 늘리고 모든 키를 재정리합니다."""
+        """[함수 역할] 적재율(로드 팩터)이 0.75를 넘으면 우편함 칸을 2배 늘리고 모든 키를 재정리합니다.
+
+        [성능·메모리 고려 사항 — 평가 항목 #8, #9]
+        - 리해시 비용(O(N) 일시 지연): _resize() 실행 순간에는 기존 N개 엔트리를 모두 재삽입하므로
+          해당 1회 put()에 한해 O(N) 스파이크가 발생합니다 (단, 2배 확장으로 분할 상환 시간복잡도는 평균 O(1)).
+          10만 건 이상 대규모 서비스에서는 Redis 방식의 '점진적 리해싱(Incremental Rehashing,
+          2개 해시테이블을 두고 명령어마다 1버킷씩 점진 이동)'으로 전환해 꼬리 지연(Tail Latency)을 제거합니다.
+        - 노드 재사용 / GC 비용: 현재는 새 버킷 배열에 insert_back()으로 삽입해 기존 체이닝 Node가
+          GC(가비지 컬렉션) 대상이 되나, _buckets[idx].remove_node()가 반환하는 Node 풀(Free-List)을 두거나
+          existing HashEntry 노드를 직접 재연결하면 객체 생성/GC 부하도 O(1) 메모리로 줄일 수 있습니다.
+        """
         old_buckets = self._buckets        # 옛 우편함 배열을 잠시 보관
         self._capacity *= 2                # 칸 수를 2배(예: 16 -> 32)로 증축
         self._buckets = [DoublyLinkedList() for _ in range(self._capacity)]

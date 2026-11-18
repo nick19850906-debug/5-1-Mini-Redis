@@ -1,0 +1,50 @@
+=== 5-1- Mini Redis 실제 CLI(REPL) 실행 검증 원본 로그 ===
+
+mini-redis> CONFIG SET maxmemory 30
+OK
+mini-redis> SET user:1 "Alice"
+OK
+mini-redis> SET user:2 "Bob"
+OK
+mini-redis> SET user:3 "Charlie"
+OK
+mini-redis> GET user:1
+(nil)
+mini-redis> INFO memory
+used_memory:22
+maxmemory:30
+evicted_keys:1
+mini-redis> INFO memory human
+used_memory:22
+maxmemory:30
+evicted_keys:1
+used_memory_human:22B
+maxmemory_human:30B
+mini-redis> KEYS
+1. "user:2"
+2. "user:3"
+mini-redis> DBSIZE
+(integer) 2
+mini-redis> EXISTS user:2
+(integer) 1
+mini-redis> DEL user:2
+(integer) 1
+mini-redis> KEYS
+1. "user:3"
+mini-redis> EXPIRE user:3 10
+(integer) 1
+mini-redis> TTL user:3
+(integer) 10
+mini-redis> SET user:3 "CharlieV2"
+OK
+mini-redis> TTL user:3
+(integer) -1
+mini-redis> CONFIG SET maxmemory abc
+(error) ERR value is not an integer or out of range
+mini-redis> GET
+(error) ERR wrong number of arguments for 'GET' command
+mini-redis> HELLO
+(error) ERR unknown command 'HELLO'
+mini-redis> SET big "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+(error) OOM command not allowed when used_memory > 'maxmemory'
+mini-redis> exit

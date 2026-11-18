@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 390" width="1000" height="390" role="img" aria-label="LFU, 100k Scale, and used_memory calibration diagram">
+  <defs>
+    <marker id="arB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#3b82f6"/></marker>
+    <marker id="arG" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#10b981"/></marker>
+  </defs>
+  <style>
+    text { font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; fill: #0f172a; }
+    .mono { font-family: Consolas, "Courier New", monospace; }
+    .pulse { animation: ps 2.4s ease-in-out infinite; }
+    .flow { stroke-dasharray: 6 5; animation: df 1.2s linear infinite; }
+    .barA { animation: bShift 5s ease-in-out infinite; }
+    @keyframes ps { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+    @keyframes df { to { stroke-dashoffset: -22; } }
+    @keyframes bShift { 0%,40% { width: 130px; } 55%,90% { width: 220px; } 100% { width: 130px; } }
+    @media (prefers-reduced-motion: reduce) { .pulse, .flow, .barA { animation: none !important; } }
+  </style>
+
+  <rect width="1000" height="390" rx="22" fill="#f8fafc"/>
+  <text x="500" y="34" font-size="20" font-weight="800" text-anchor="middle">심화 확장 설계 한눈에 보기 (LFU 전환 · 10만 건 병목 · 메모리 모델 보정)</text>
+
+  <!-- Card 1: #15 LRU -> LFU -->
+  <rect x="24" y="54" width="304" height="314" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- Minimalist Icon (Star + Bars) -->
+  <circle cx="58" cy="88" r="18" fill="#ede9fe"/>
+  <rect x="49" y="90" width="5" height="9" rx="2" fill="#7c3aed"/>
+  <rect x="56" y="84" width="5" height="15" rx="2" fill="#7c3aed"/>
+  <rect x="63" y="79" width="5" height="20" rx="2" fill="#7c3aed"/>
+  <text x="86" y="85" font-size="14.5" font-weight="800" style="fill:#5b21b6">#15. LRU ➔ LFU 전환 설계</text>
+  <text x="86" y="103" font-size="11.5" style="fill:#64748b">자주 안 쓴 키부터 O(1) 제거</text>
+
+  <rect x="42" y="122" width="268" height="40" rx="10" fill="#f5f3ff" stroke="#c4b5fd"/>
+  <text x="176" y="140" font-size="12" font-weight="700" text-anchor="middle" class="mono">Record.freq (조회 횟수 +1)</text>
+  <text x="176" y="156" font-size="11" text-anchor="middle" style="fill:#6d28d9">min_freq 포인터가 최저 빈도를 추적</text>
+
+  <line class="flow" x1="176" y1="164" x2="176" y2="188" stroke="#7c3aed" stroke-width="2.5"/>
+
+  <rect x="42" y="190" width="268" height="114" rx="12" fill="#faf5ff" stroke="#ddd6fe"/>
+  <text x="54" y="210" font-size="11.5" font-weight="800" style="fill:#6d28d9">freq_map (빈도별 기차 줄 분리)</text>
+  <rect class="pulse" x="54" y="220" width="244" height="32" rx="8" fill="#fee2e2" stroke="#f87171"/>
+  <text x="64" y="240" font-size="11.5" font-weight="800" class="mono" style="fill:#b91c1c">freq=1 (최저!): [u2] ⇄ [u1(퇴거)]</text>
+  <rect x="54" y="260" width="244" height="32" rx="8" fill="#dcfce7" stroke="#4ade80"/>
+  <text x="64" y="280" font-size="11.5" font-weight="700" class="mono" style="fill:#15803d">freq=5 (인기!): [u9] ⇄ [u3]</text>
+
+  <text x="176" y="330" font-size="11.5" font-weight="700" text-anchor="middle">• 같은 빈도 내 동률은 LRU 꼬리 퇴거</text>
+  <text x="176" y="348" font-size="11.5" text-anchor="middle" style="fill:#475569">• 시간 감쇠(decay)로 옛 인기 키 고착 방지</text>
+
+  <!-- Card 2: #16 100k Scale Architecture -->
+  <rect x="348" y="54" width="304" height="314" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- Minimalist Icon (3 Shards Connected) -->
+  <circle cx="382" cy="88" r="18" fill="#dcfce7"/>
+  <rect x="372" y="79" width="8" height="8" rx="2" fill="#059669"/>
+  <rect x="384" y="79" width="8" height="8" rx="2" fill="#059669"/>
+  <rect x="378" y="90" width="8" height="8" rx="2" fill="#059669"/>
+  <text x="410" y="85" font-size="14.5" font-weight="800" style="fill:#047857">#16. 10만 건 이상 병목 대책</text>
+  <text x="410" y="103" font-size="11.5" style="fill:#64748b">지연 스파이크 없이 분산 확장</text>
+
+  <rect x="366" y="122" width="268" height="54" rx="10" fill="#ecfdf5" stroke="#6ee7b7"/>
+  <text x="378" y="142" font-size="12" font-weight="800" style="fill:#065f46">1. 점진적 리해싱 (Incremental)</text>
+  <text x="378" y="162" font-size="11.5" style="fill:#334155">한 번에 10만 개 이사 ❌ → 매 명령 1칸씩 쪼개 이동 ✅</text>
+
+  <rect x="366" y="186" width="268" height="54" rx="10" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="378" y="206" font-size="12" font-weight="800" style="fill:#1d4ed8">2. 16,384 해시 슬롯 샤딩</text>
+  <text x="378" y="226" font-size="11.5" style="fill:#334155">CRC16 % 16384 로 노드 3~N대로 부하·힙 크기 분할</text>
+
+  <rect x="366" y="250" width="268" height="54" rx="10" fill="#fffbeb" stroke="#fcd34d"/>
+  <text x="378" y="270" font-size="12" font-weight="800" style="fill:#b45309">3. 적응형 TTL + 비동기 I/O</text>
+  <text x="378" y="290" font-size="11.5" style="fill:#334155">Stale 2배 초과 시 힙 컴팩션 + 파이프라이닝</text>
+
+  <circle r="4" fill="#10b981"><animateMotion dur="2.6s" repeatCount="indefinite" path="M366,149 L634,149"/></circle>
+  <text x="500" y="330" font-size="11.5" font-weight="700" text-anchor="middle">• 단일 스레드 블로킹(Stop-the-World) 제거</text>
+  <text x="500" y="348" font-size="11.5" text-anchor="middle" style="fill:#475569">• 샤드별 독립 힙 → O(log(N/K)) 로 축소</text>
+
+  <!-- Card 3: #17 used_memory Calibration -->
+  <rect x="672" y="54" width="304" height="314" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- Minimalist Icon (Memory Chip) -->
+  <circle cx="706" cy="88" r="18" fill="#dbeafe"/>
+  <rect x="698" y="80" width="16" height="16" rx="3" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <rect x="703" y="85" width="6" height="6" rx="1" fill="#2563eb"/>
+  <text x="734" y="85" font-size="14.5" font-weight="800" style="fill:#1d4ed8">#17. 메모리 모델 변경 보정</text>
+  <text x="734" y="103" font-size="11.5" style="fill:#64748b">오버헤드 포함 시 공정 비교 공식</text>
+
+  <text x="690" y="136" font-size="12" font-weight="800">모델 A (현재: 순수 키+값)</text>
+  <rect x="690" y="144" width="268" height="22" rx="11" fill="#e2e8f0"/>
+  <rect x="690" y="144" width="130" height="22" rx="11" fill="#3b82f6"/>
+  <text x="698" y="159" font-size="11" font-weight="800" style="fill:#fff">22B (Payload만 합산)</text>
+
+  <text x="690" y="192" font-size="12" font-weight="800">모델 B (오버헤드 +64B/엔트리 포함)</text>
+  <rect x="690" y="200" width="268" height="22" rx="11" fill="#e2e8f0"/>
+  <rect class="barA" x="690" y="200" width="130" height="22" rx="11" fill="#f59e0b"/>
+  <text x="698" y="215" font-size="11" font-weight="800" style="fill:#fff">22B + 2×64B = 150B</text>
+
+  <rect x="690" y="240" width="268" height="72" rx="10" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="824" y="260" font-size="11.5" font-weight="800" text-anchor="middle" style="fill:#1e40af">공정 보정 공식 (동일 퇴거 보장)</text>
+  <text x="824" y="280" font-size="11.5" font-weight="800" text-anchor="middle" class="mono">maxmem_B = maxmem_A + N×C</text>
+  <text x="824" y="298" font-size="11" text-anchor="middle" style="fill:#334155">예: C=64B, 2개 유지 시 30 + 128 = 158B</text>
+
+  <text x="824" y="330" font-size="11.5" font-weight="700" text-anchor="middle">• 미보정 시 기존 30B 테스트 모두 OOM!</text>
+  <text x="824" y="348" font-size="11.5" text-anchor="middle" style="fill:#475569">• 채점 시 payload/overhead 모드 분리 필수</text>
+</svg>

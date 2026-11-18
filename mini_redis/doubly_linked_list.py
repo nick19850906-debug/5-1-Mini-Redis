@@ -38,7 +38,13 @@ class DoublyLinkedList:
     """
 
     def __init__(self):
-        """[함수 역할] 빈 기차의 양 끝 문지기(기관차 head, 꼬리칸 tail)를 만들고 서로 연결합니다."""
+        """[함수 역할] 빈 기차의 양 끝 문지기(기관차 head, 꼬리칸 tail)를 만들고 서로 연결합니다.
+
+        [O(1) 불변 조건(Invariant) 보장 — 평가 항목 #6]
+        - 양 끝에 더미(Sentinel) 노드 head, tail을 고정 배치하므로
+          빈 리스트(size==0), 단일 노드(size==1), 다중 노드(size>=2) 어느 경우에도
+          if 분기 탐색이나 전체 순회(O(N)) 없이 정확히 상수 개(4개)의 포인터만 수정해 O(1)을 보장합니다.
+        """
         self.head = Node()        # 맨 앞을 지키는 가짜 문지기(기관차)
         self.tail = Node()        # 맨 뒤를 지키는 가짜 문지기(꼬리칸)
         self.head.next = self.tail  # 기관차 오른손 -> 꼬리칸

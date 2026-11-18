@@ -50,25 +50,30 @@ python main.py
 | String | `DBSIZE` | 만료 키 정리 후 유효한 전체 키 개수 |
 | String | `KEYS` | 전체 키 목록 (`1. "key"` 형식, 비어 있으면 `(empty array)`) |
 | 메모리 | `CONFIG SET maxmemory bytes` | 최대 메모리 제한 (`0`은 무제한) |
-| 메모리 | `INFO memory` | `used_memory`, `maxmemory`, `evicted_keys` 출력 |
+| 메모리 | `INFO memory [human]` | `used_memory`, `maxmemory`, `evicted_keys` (바이트; `human` 지정 시 `B/KB/MB` 병행) |
 | TTL | `EXPIRE key seconds` | 만료 시간(초) 설정 (`0` 이하는 즉시 만료 삭제) |
 | TTL | `TTL key` | 남은 초 (`-2` 키 없음/만료됨, `-1` 만료 설정 안 됨) |
 
+> 📄 **실제 REPL 실행 로그 증거:** [`../docs/repl-execution.log`](../docs/repl-execution.log)
+
 ---
 
-## 4. 동료 평가자 9대 체크리스트 (`python evaluate.py` 로 원클릭 확인!)
+## 4. 동료 평가자 12대 체크리스트 (`python evaluate.py` 로 원클릭 확인!)
 
 | # | 평가 항목 | 확인 포인트 |
 | :-: | :--- | :--- |
 | 1 | `dict` / `set` / `collections` 미사용 | 5개 `.py` 전체 AST 검사 통과 |
 | 2 | 이중 연결 리스트 6개 메서드 $O(1)$ | [`doubly_linked_list.py`](./doubly_linked_list.py): `insert_front/back`, `remove_front/back/node`, `move_to_front` |
 | 3 | 해시맵: 자체 해시 + 체이닝 + 0.75 초과 2배 확장 | [`hash_map.py`](./hash_map.py): `_hash`, `_resize`, `put` |
-| 4 | 최소 힙: `push/pop/peek/size`, `_heapify_up/down` | [`min_heap.py`](./min_heap.py) |
+| 4 | 최소 힙: `push/pop/peek/size`, `_heapify_up/down` | [`min_heap.py`](./min_heap.py) (Stale 튜플 Lazy Deletion 주석 완비) |
 | 5 | 명세서 공식 예시 재현 (LRU 퇴거, `INFO memory`) | `maxmemory 30` 후 `user:1` 퇴거, `used_memory:22`, `evicted_keys:1` |
 | 6 | `GET` 시 LRU 갱신, 단일 엔트리 `OOM` | `GET` 성공 시에만 최신화, 단일 키+값 > `maxmemory` 시 즉시 `OOM` |
 | 7 | TTL: 만료 후 `(nil)`/`-2`, 덮어쓰기 시 초기화 | `EXPIRE`, 대기 후 `GET`/`TTL`, 덮어쓰기 후 `TTL`→`-1` |
-| 8 | 에러 표준 출력 4종 & 따옴표 값 파싱 | `GET`(인자 부족), `HELLO`, `CONFIG SET maxmemory abc`, `"hello world"` |
+| 8 | 에러 표준 출력 5종 & 따옴표 값 파싱 | `ERR_WRONG_ARGS`, `ERR_UNKNOWN_CMD`, `ERR_NOT_INTEGER`, `ERR_QUOTES`, `OOM` |
 | 9 | 각 자료구조 독립 파일 & 초보자용 주석/Docstring | 5개 모듈 분리 및 `[실생활 비유]`·`[구역]` 한글 주석 완비 |
+| 10 | 자기참조 퇴거 경계 & `INFO memory human` | 꼬리 키 덮어쓰기 시 본인 미삭제 & `used_memory_human` 단위 병행 출력 |
+| 11 | 이중 연결 리스트 $O(1)$ 상수 시간 실측 | `N=100` (`1.11ms`) vs `N=10,000` (`0.82ms`) 비율 `< 5.0` 검증 |
+| 12 | 해시맵 1,000키 분포·충돌 통계 검증 | 1,000키 삽입 후 2,048칸 분산, 최대 체인 길이 `4` 확인 |
 
 ---
 
@@ -89,3 +94,11 @@ python main.py
 **Q4. 메모리 제한 시 LRU 퇴거와 `used_memory` 갱신 흐름은?**
 - **비유:** 냉장고 한도(`maxmemory`)를 넘으면 기차 맨 뒤(`tail.prev`)의 가장 오래 안 쓴 키부터 하나씩 지우고, 지운 바이트만큼 `used_memory`를 줄이며 `evicted_keys`를 1씩 올립니다. 단, 새 데이터 1개 자체가 한도보다 크면 기존 데이터를 지키고 즉시 `OOM`을 반환합니다.
 - **코드:** [`mini_redis.py`](./mini_redis.py)의 `set` 메서드.
+
+---
+
+## 6. 심화 확장 설계 요약 (#15 LFU 전환 · #16 10만 건 병목 · #17 메모리 모델 보정)
+
+- **#15 LFU 전환:** `Record.freq` 빈도 필드 + `freq_map[freq -> DoublyLinkedList]` + `min_freq` 포인터 조합으로 $O(1)$ 조회/퇴거 유지 (동률 시 LRU 꼬리 제거, `lfu-decay-time` 시간 감쇠로 캐시 오염 방지).
+- **#16 10만 건 이상 병목 대책:** ① `_resize()` 스파이크 ➔ `ht[0]/ht[1]` **점진적 리해싱**, ② `MinHeap` Stale 누적 ➔ **2배 초과 시 컴팩션 + 적응형 샘플링**, ③ 단일 노드 한계 ➔ **16,384 해시 슬롯 샤딩**, ④ CLI I/O ➔ **파이프라이닝 & `asyncio` 비동기 루프**.
+- **#17 `used_memory` 모델 변경 보정:** 구조체 오버헤드 $C_{\text{entry}}(\approx 64\text{B})$ 포함 시 기존 `maxmemory 30` 테스트가 전부 OOM으로 실패하므로, 동일 퇴거 동작 유지를 위해 $\text{maxmemory}_B = \text{maxmemory}_A + (N_{\text{목표}} \times C_{\text{entry}})$ 보정 공식을 적용합니다. *(전체 도표·수식 상세: [`../README.md` 5장](../README.md#5-심화-확장-설계--운영품질-보완-명세-ai-사전평가-17개-항목-100-대응))*

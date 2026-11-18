@@ -134,6 +134,56 @@ def check_errors():
     assert run(r, "GET msg") == '"hello world"'
 
 
+def check_info_human_and_self_eviction_boundary():
+    """평가 항목 #2(자기참조 퇴거 경계) 및 #3(INFO memory human 단위 출력) 검증."""
+    r = MiniRedis()
+    assert run(r, "CONFIG SET maxmemory 15") == "OK"
+    assert run(r, 'SET a "12345"') == "OK"       # 1 + 5 = 6B (tail 쪽)
+    assert run(r, 'SET b "12345"') == "OK"       # 1 + 5 = 6B (MRU) -> 합계 12B, LRU 순: b -> a
+    # 현재 tail.prev 인 'a' 를 10바이트(1+9)로 덮어쓰면 projected=16 > 15 이므로 자기 자신 'a' 를 지우지 않고 앞 칸 'b' 를 퇴거시켜야 함!
+    assert run(r, 'SET a "123456789"') == "OK"
+    assert run(r, "GET a") == '"123456789"'
+    assert run(r, "GET b") == "(nil)"
+    human_info = run(r, "INFO memory human")
+    assert "used_memory:10" in human_info
+    assert "used_memory_human:10B" in human_info
+    assert "maxmemory_human:15B" in human_info
+
+
+def check_dll_o1_complexity():
+    """평가 항목 #6: N=100 vs N=10,000 에서 DoublyLinkedList 연산 시간이 상수 시간 O(1)인지 검증."""
+    def measure(n):
+        dll = DoublyLinkedList()
+        mid_node = None
+        for i in range(n):
+            nd = dll.insert_back(i)
+            if i == n // 2:
+                mid_node = nd
+        t0 = time.perf_counter()
+        for _ in range(5000):
+            dll.move_to_front(mid_node)
+        return time.perf_counter() - t0
+
+    t_small = measure(100)
+    t_large = measure(10000)
+    # 데이터 크기가 100배 커졌어도 O(1) 포인터 조작만 하므로 시간 비율이 5배 미만
+    ratio = t_large / max(t_small, 1e-6)
+    assert ratio < 5.0, f"O(1) scale ratio unexpected: {ratio:.2f}"
+
+
+def check_hash_distribution():
+    """평가 항목 #7: 1,000개 키 삽입 시 다항 롤링 해시(prime=31)의 버킷 분포 및 최대 체인 길이 검증."""
+    hm = HashMap()
+    for i in range(1000):
+        hm.put("user:%d" % i, "val_%d" % i)
+    lengths = [len(b) for b in hm._buckets]
+    max_chain = max(lengths)
+    non_empty = sum(1 for x in lengths if x > 0)
+    assert hm.size() == 1000 and hm._capacity == 2048
+    assert max_chain <= 6, f"Max chain too deep: {max_chain}"
+    assert non_empty >= 500, f"Too few active buckets: {non_empty}"
+
+
 CHECKS = [
     ("dict / set / collections 미사용", check_no_builtin_collections),
     ("이중 연결 리스트 (삽입/삭제/이동)", check_doubly_linked_list),
@@ -144,6 +194,9 @@ CHECKS = [
     ("TTL (EXPIRE/TTL/만료/덮어쓰기 초기화)", check_ttl),
     ("DEL / EXISTS / 메모리 차감", check_del_exists),
     ("에러 표준 출력 + 따옴표 값 파싱", check_errors),
+    ("자기참조 퇴거 경계 & INFO memory human 단위 (#2, #3)", check_info_human_and_self_eviction_boundary),
+    ("이중 연결 리스트 O(1) 상수 시간 실측 (#6)", check_dll_o1_complexity),
+    ("해시맵 1,000키 분포·충돌 통계 검증 (#7)", check_hash_distribution),
 ]
 
 if __name__ == "__main__":

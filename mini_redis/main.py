@@ -94,9 +94,11 @@ def execute_command(redis, tokens):
         return redis.config_set_maxmemory(tokens[3])
 
     elif cmd == "INFO":
-        if len(tokens) != 2 or tokens[1].lower() != "memory":
-            return "(error) ERR wrong number of arguments for 'INFO' command"
-        return redis.info_memory()
+        if len(tokens) == 2 and tokens[1].lower() == "memory":
+            return redis.info_memory(human=False)
+        if len(tokens) == 3 and tokens[1].lower() == "memory" and tokens[2].lower() == "human":
+            return redis.info_memory(human=True)
+        return "(error) ERR wrong number of arguments for 'INFO' command"
 
     elif cmd == "EXPIRE":
         if len(tokens) != 3:

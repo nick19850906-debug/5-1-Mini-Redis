@@ -210,6 +210,18 @@
   .chain-entry b { color:var(--ink); }
   .chain-entry .ce-link { display:block; font-size:.68rem; color:var(--purple); font-weight:700; margin-top:2px; }
 
+  /* Section 6: Minimalist Icon-Card Expansion Studio (#15 LFU, #16 100k, #17 Memory Calibration) */
+  .adv-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:920px){ .adv-grid { grid-template-columns:1fr; } }
+  .adv-card { background:var(--soft); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; }
+  .adv-head { display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  .adv-ico { width:34px; height:34px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:1.05rem; flex-shrink:0; }
+  .adv-title { font-size:.88rem; font-weight:800; line-height:1.25; }
+  .adv-sub { font-size:.72rem; color:var(--sub); }
+  .adv-list { margin:0; padding-left:16px; font-size:.78rem; color:var(--ink); line-height:1.65; }
+  .cal-box { margin-top:8px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-size:.77rem; }
+  .cal-box input[type=range] { width:100%; accent-color:#3b82f6; cursor:pointer; margin:4px 0; }
+
   .empty { color:var(--sub); font-size:.88rem; padding:8px 4px; }
   .hint { color:var(--sub); font-size:.82rem; margin-top:6px; }
   footer { text-align:center; color:var(--sub); font-size:.84rem; padding-bottom:28px; }
@@ -409,6 +421,51 @@
 
     <div class="chain-panel" id="chainPanel"></div>
     <div class="hint">💡 <b>우편함 칸을 클릭</b>하면 아래 체이닝 현미경에서 내부 연결 리스트를 자세히 볼 수 있고, 노드를 누르면 <b>4번 LRU 기차</b>의 연결 위치까지 강조됩니다!</div>
+  </section>
+
+  <!-- Section 6: Minimalist Icon-Card Expansion Studio (#15 LFU, #16 Scale, #17 Memory Calibration) -->
+  <section class="card" id="secAdv">
+    <h2>6. 심화 확장 설계 스튜디오 <span class="sublbl">(LFU 전환 · 10만 건 병목 대책 · 메모리 오버헤드 보정 실시간 계산)</span></h2>
+    <div class="adv-grid">
+      <div class="adv-card">
+        <div class="adv-head">
+          <div class="adv-ico" style="background:rgba(139,92,246,.15);color:#7c3aed">📊</div>
+          <div><div class="adv-title">#15. LRU ➔ LFU 전환 설계</div><div class="adv-sub">조회 빈도 기반 O(1) 퇴거</div></div>
+        </div>
+        <ul class="adv-list">
+          <li><b>빈도 카운트:</b> <code>Record.freq</code> (기본 1, <code>GET</code> 시 +1)</li>
+          <li><b>이중 맵+리스트:</b> <code>freq_map[freq] ➔ DoublyLinkedList</code> + 최저 빈도 포인터 <code>min_freq</code>로 O(1) 승격·퇴거</li>
+          <li><b>동률·감쇠 정책:</b> 동일 빈도 내에선 LRU 꼬리 제거 + 시간 경과 시 빈도 반감(<code>lfu-decay-time</code>)으로 옛 인기 키 고착 방지</li>
+        </ul>
+      </div>
+
+      <div class="adv-card">
+        <div class="adv-head">
+          <div class="adv-ico" style="background:rgba(16,185,129,.15);color:#059669">🚀</div>
+          <div><div class="adv-title">#16. 10만 건 대규모 병목 &amp; 대책</div><div class="adv-sub">지연 스파이크 제거 &amp; 수평 분할</div></div>
+        </div>
+        <ul class="adv-list">
+          <li><b>리해시 스파이크:</b> <code>ht[0]/ht[1]</code> <b>점진적 리해싱</b>(매 명령 1버킷씩 이동)으로 순간 정지 제거</li>
+          <li><b>힙·Stale 누적:</b> Stale &gt; 2N 시 O(N) 컴팩션 + Redis형 <b>적응형 샘플링</b> 병행</li>
+          <li><b>CPU·I/O 한계:</b> <b>16,384 해시 슬롯 샤딩</b>(N개 노드 분산) + 명령어 <b>파이프라이닝 / 비동기 asyncio</b> 전환</li>
+        </ul>
+      </div>
+
+      <div class="adv-card">
+        <div class="adv-head">
+          <div class="adv-ico" style="background:rgba(59,130,246,.15);color:#2563eb">⚖️</div>
+          <div><div class="adv-title">#17. used_memory 모델 보정기</div><div class="adv-sub">순수 Payload vs 오버헤드 포함 비교</div></div>
+        </div>
+        <div class="cal-box">
+          <div style="display:flex;justify-content:space-between;font-weight:800">
+            <span>엔트리당 구조체 오버헤드 (C):</span>
+            <span id="calCVal" style="color:var(--blue)">64 B/키</span>
+          </div>
+          <input type="range" id="calCSlider" min="0" max="128" step="8" value="64">
+          <div id="calResult" style="font-family:Consolas,monospace;font-size:.75rem;line-height:1.5;margin-top:4px"></div>
+        </div>
+      </div>
+    </div>
   </section>
 </main>
 <footer>5-1- Mini Redis · 이 페이지는 학습용 실시간 시각화이며 실제 Python 구현은 <code>mini_redis/</code> 폴더에 있습니다.</footer>
@@ -1164,10 +1221,30 @@
     b.onclick = function(){ startPreset(b, P[b.getAttribute('data-p')]); };
   });
 
+  function updateCal(){
+    var c = parseInt($('calCSlider').value, 10) || 0;
+    var n = store.length || 2;
+    var baseU = store.length ? used() : 22;
+    var baseM = maxmem > 0 ? maxmem : 30;
+    $('calCVal').textContent = c + ' B/키' + (c === 0 ? ' (현재 Payload 전용)' : '');
+    var overU = baseU + n * c;
+    var overM = baseM + n * c;
+    $('calResult').innerHTML =
+      '• 현재 키 ' + n + '개 Payload: <b>' + baseU + 'B</b> (한도 ' + baseM + 'B)<br>' +
+      '• 오버헤드 포함 시: <b>' + overU + 'B</b> (+' + (n * c) + 'B)<br>' +
+      '• 동일 퇴거 보장 보정 한도: <b style="color:#059669">' + overM + 'B</b>' + (c > 0 ? ' <span style="color:#dc2626">(미보정 30B 시 전부 OOM!)</span>' : '');
+  }
+
+  $('calCSlider').oninput = updateCal;
+
   setInterval(function(){
     if (purge(false)) { updatePipeline('자동 TTL 만료'); render(); }
     else { renderHeap2D(); }
   }, 200);
+
+  // Hook updateCal inside render by wrapping render call cleanly
+  var _origRender = render;
+  render = function(){ _origRender(); updateCal(); };
 
   resetState(false);
 })();

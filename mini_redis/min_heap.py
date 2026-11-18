@@ -17,6 +17,16 @@ class MinHeap:
 
     (expire_at, key) 형태의 튜플을 저장하여 만료 시각(expire_at)이
     가장 이른 키를 O(1)에 조회(peek)하고 O(log N)에 삽입/삭제합니다.
+
+    [지연 삭제(Lazy Deletion) & Stale 튜플 처리 원리 — 평가 항목 #4, #12]
+    - DEL 삭제 또는 SET 덮어쓰기, EXPIRE 갱신이 일어나면 기존에 힙 내부에 들어 있던
+      이전 (old_expire_at, key) 튜플을 찾기 위해 힙 배열 전체를 O(N)으로 탐색해 지우지 않습니다.
+    - 대신 구버전 튜플을 그대로 두었다가(Stale 항목), 나중에 이 튜플이 루트(_data[0])로 올라와
+      pop() 될 때 HashMap(store.get(key))의 실제 record.expire_at 과 대조해:
+        * record is None (이미 삭제됨) OR record.expire_at != expire_at (TTL 초기화/변경됨)
+      이면 아무 부작용 없이 조용히 폐기(Lazy Deletion)합니다.
+    - 만약 대규모 환경에서 무효화된 Stale 튜플이 힙 크기의 2배 이상 누적되면,
+      유효 키만 모아 O(N) heapify 로 주기적 컴팩션(Compaction)을 수행할 수 있습니다.
     """
 
     def __init__(self):

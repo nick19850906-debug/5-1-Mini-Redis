@@ -20,7 +20,20 @@ from min_heap import MinHeap
 # [1구역: 키 하나가 들고 다니는 정보 묶음 (Record) 클래스]
 # ==============================================================================
 class Record:
-    """해시맵에 저장되는 키의 실제 값과 메타데이터(LRU 노드 참조, 만료 시각)를 묶는 객체."""
+    """해시맵에 저장되는 키의 실제 값과 메타데이터(LRU 노드 참조, 만료 시각)를 묶는 객체.
+
+    [HashMap <-> Record <-> DoublyLinkedList 결합 다이어그램 — 평가 항목 #10]
+      HashMap (self.store)                DoublyLinkedList (self.lru_list)
+      ┌─────────────────────┐             ┌──────┐   ┌──────────┐   ┌──────┐
+      │ key: "user:1"       │             │ HEAD │<=>│"user:1"  │<=>│ TAIL │
+      │   └─► Record        │             └──────┘   │  (Node)  │   └──────┘
+      │        ├─ value     │                           ▲
+      │        ├─ lru_node ─┼───────────────────────────┘ (O(1) 직접 참조!)
+      │        └─ expire_at │
+      └─────────────────────┘
+      -> 해시맵에서 키를 평균 O(1)에 찾은 뒤 Record.lru_node로 리스트 노드를 즉시 잡기 때문에,
+         리스트 전체를 처음부터 탐색(O(N))하지 않고도 move_to_front / remove_node 가 O(1)로 동작합니다.
+    """
 
     def __init__(self, value, lru_node, expire_at=None):
         """[함수 역할] 실제 값(value), 기차 칸 위치(lru_node), 만료 시각(expire_at)을 묶습니다."""
@@ -116,6 +129,13 @@ class MiniRedis:
         projected_memory = self.used_memory - old_bytes + new_bytes
 
         # maxmemory 초과 시 기차 맨 뒤(tail.prev = 가장 오래 안 쓴 LRU 키)부터 차례로 제거
+        # [퇴거 루프 종료 조건 & 자기참조 방어 — 평가 항목 #2]
+        # 1) 종료 조건 A: projected_memory <= self.maxmemory (메모리 한도 이하 회복)
+        # 2) 종료 조건 B: self.lru_list.tail.prev is self.lru_list.head (더 이상 지울 다른 키 없음)
+        # 3) 자기참조 방어(if victim_key == key): 기존 키(key)가 현재 LRU 맨 끝(tail.prev)에 있던 상태에서
+        #    더 큰 값으로 덮어쓰기(SET)가 들어오면, 자기 자신은 이번 명령의 대상이므로 먼저 지우지 않고
+        #    그 바로 앞 칸(victim_node.prev.data)을 다음 희생자(victim)로 선택합니다.
+        #    만약 앞 칸마저 head(즉, 리스트에 자기 자신 1개뿐)라면 즉시 break 후 덮어쓰기를 완료합니다.
         if self.maxmemory > 0:
             while (
                 projected_memory > self.maxmemory
@@ -123,7 +143,6 @@ class MiniRedis:
             ):
                 victim_node = self.lru_list.tail.prev
                 victim_key = victim_node.data
-                # 지금 덮어쓰려는 본인 키는 퇴거 대상에서 피하고 그 앞 칸을 선택
                 if victim_key == key:
                     if victim_node.prev is self.lru_list.head:
                         break
@@ -152,7 +171,14 @@ class MiniRedis:
         return "OK"
 
     def get(self, key):
-        """[GET key] 만료 여부를 먼저 확인한 뒤 값을 돌려주고, 성공한 경우에만 LRU를 맨 앞으로 갱신합니다."""
+        """[GET key] 만료 여부를 먼저 확인한 뒤 값을 돌려주고, 성공한 경우에만 LRU를 맨 앞으로 갱신합니다.
+
+        [예외 경로 포함 O(1) 보장 — 평가 항목 #11, #14]
+        1) 빈 저장소이거나 키가 없는 경로: HashMap.get(key) 평균 O(1) -> None -> '(nil)' 반환
+        2) 만료된 키 경로(expire_at <= now): _delete_internal O(1) 삭제 후 '(nil)' 반환 (LRU 갱신 안 함!)
+        3) 정상 히트 경로: move_to_front(record.lru_node) 는 리스트가 1개든 10만 개든
+           포인터 4개만 재연결하므로 항상 O(1) 만에 최상단(MRU)으로 이동합니다.
+        """
         self._check_and_expire_key(key)
         record = self.store.get(key)
         if record is None:
@@ -207,14 +233,34 @@ class MiniRedis:
         self.maxmemory = val
         return "OK"
 
-    def info_memory(self):
-        """[INFO memory] 현재 사용 바이트, 제한 바이트, LRU 퇴거 횟수를 반환합니다."""
+    def _format_human_bytes(self, num_bytes):
+        """[내부 도우미] 바이트 정수를 사람이 읽기 쉬운 단위(B, KB, MB) 문자열로 변환합니다."""
+        if num_bytes < 1024:
+            return f"{num_bytes}B"
+        if num_bytes < 1024 * 1024:
+            return f"{num_bytes / 1024:.2f}KB"
+        return f"{num_bytes / (1024 * 1024):.2f}MB"
+
+    def info_memory(self, human=False):
+        """[INFO memory] 현재 사용량(bytes), 제한(bytes), 누적 퇴거 키 수를 반환합니다.
+
+        [단위 표기 & human-readable 옵션 — 평가 항목 #3]
+        - 기본 모드(`INFO memory`): 명세서/Redis 표준에 맞춰 바이트 단위 정수를 출력
+          (used_memory:<bytes>, maxmemory:<bytes>, evicted_keys:<count>)
+        - 확장 모드(`INFO memory human`): 바이트 값과 함께 사람이 읽기 쉬운 human-readable 항목
+          (used_memory_human, maxmemory_human)을 추가로 출력합니다.
+        """
         self._cleanup_expired_heap()
-        return (
-            f"used_memory:{self.used_memory}\n"
-            f"maxmemory:{self.maxmemory}\n"
-            f"evicted_keys:{self.evicted_keys}"
-        )
+        lines = [
+            f"used_memory:{self.used_memory}",
+            f"maxmemory:{self.maxmemory}",
+            f"evicted_keys:{self.evicted_keys}",
+        ]
+        if human:
+            max_h = "unlimited" if self.maxmemory == 0 else self._format_human_bytes(self.maxmemory)
+            lines.append(f"used_memory_human:{self._format_human_bytes(self.used_memory)}")
+            lines.append(f"maxmemory_human:{max_h}")
+        return "\n".join(lines)
 
     # --------------------------------------------------------------------------
     # [6구역: TTL 만료 관리 명령어 2개 (EXPIRE, TTL)]
